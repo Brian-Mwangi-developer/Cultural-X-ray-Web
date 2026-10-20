@@ -23,7 +23,7 @@ function Eyebrow({ children, className }: { children: React.ReactNode; className
 
 function SectionTitle({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <h2 className={cn("font-serif text-[2.5rem] leading-[1.02] tracking-[-0.03em] text-balance sm:text-[3.4rem]", className)}>
+    <h2 className={cn("font-heading font-semibold text-[2.5rem] leading-[1.02] tracking-[-0.03em] text-balance sm:text-[3.4rem]", className)}>
       {children}
     </h2>
   );
@@ -36,7 +36,7 @@ function Tile({ children, className }: { children: React.ReactNode; className?: 
 function TileHead({ index, title, body }: { index: string; title: string; body: string }) {
   return (
     <div className="p-6 sm:p-7">
-      <p className="font-serif text-[15px] text-muted-foreground italic tabular-nums">{index}</p>
+      <p className="font-mono text-[13px] text-muted-foreground tabular-nums">{index}</p>
       <h3 className="mt-2 text-[1.35rem] font-medium tracking-[-0.02em]">{title}</h3>
       <p className="mt-2 max-w-[34rem] text-[15px] leading-relaxed text-muted-foreground">{body}</p>
     </div>
@@ -68,7 +68,7 @@ export function SignalStrip() {
       <div className="flex w-max animate-marquee gap-10 hover:[animation-play-state:paused]">
         {row.map(([name, kind], i) => (
           <span key={i} aria-hidden={i >= SIGNALS.length} className="flex shrink-0 items-baseline gap-2.5 whitespace-nowrap">
-            <span className="font-serif text-[1.6rem] tracking-[-0.02em]">{name}</span>
+            <span className="font-heading font-semibold text-[1.6rem] tracking-[-0.02em]">{name}</span>
             <span className="text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">{kind}</span>
           </span>
         ))}
@@ -212,7 +212,7 @@ function AdCheck() {
       </div>
       <div className="px-4 py-4">
         <p className="text-[14.5px] leading-snug">
-          <span className="font-serif text-[1.9rem] leading-none tracking-[-0.02em] tabular-nums">80%</span>{" "}
+          <span className="font-heading font-semibold text-[1.9rem] leading-none tracking-[-0.02em] tabular-nums">80%</span>{" "}
           of its cultural signals sit in The North Face&rsquo;s territory.
         </p>
         <div className="mt-4 flex h-2 gap-0.5 overflow-hidden rounded-full" role="img" aria-label="80% theirs, 12% contested, 8% yours">
@@ -278,7 +278,7 @@ export function HowItWorks() {
         <ol className="divide-y border-y">
           {STEPS.map((s, i) => (
             <li key={s.title} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-4 py-8 sm:py-10">
-              <span className="font-serif text-[2.4rem] leading-none text-muted-foreground/70 tabular-nums">{i + 1}</span>
+              <span className="font-heading font-semibold text-[2.4rem] leading-none text-muted-foreground/70 tabular-nums">{i + 1}</span>
               <div>
                 <h3 className="text-[1.3rem] font-medium tracking-[-0.02em]">{s.title}</h3>
                 <p className="mt-2 max-w-[36rem] text-[15.5px] leading-relaxed text-muted-foreground">{s.body}</p>
@@ -297,9 +297,9 @@ export function SoundNote() {
   return (
     <section className="mx-auto max-w-[84rem] px-4 py-24 sm:px-6 sm:py-32">
       <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-20">
-        <blockquote className="font-serif text-[2.1rem] leading-[1.12] tracking-[-0.025em] text-balance sm:text-[2.8rem]">
+        <blockquote className="font-heading font-semibold text-[2.1rem] leading-[1.12] tracking-[-0.025em] text-balance sm:text-[2.8rem]">
           &ldquo;Patagonia&rsquo;s buyers over-index on Lord Huron and Gregory Alan Isakov.&rdquo;
-          <footer className="mt-6 font-sans text-[14px] tracking-normal text-muted-foreground not-italic">
+          <footer className="mt-6 font-sans text-[14px] tracking-normal text-muted-foreground">
             That tells you the mood and the world: acoustic, folk, outdoors. It isn&rsquo;t a track you can license.
           </footer>
         </blockquote>
@@ -356,7 +356,7 @@ export function Modes() {
       <div className="mt-12 grid overflow-hidden rounded-[22px] border bg-card md:grid-cols-2 md:divide-x max-md:divide-y">
         {MODES.map((m) => (
           <div key={m.name} className="p-6 sm:p-9">
-            <h3 className="font-serif text-[2rem] tracking-[-0.02em]">{m.name}</h3>
+            <h3 className="font-heading font-semibold text-[2rem] tracking-[-0.02em]">{m.name}</h3>
             <p className="mt-1.5 text-[15px] text-muted-foreground">{m.line}</p>
             <dl className="mt-7 divide-y border-y">
               {m.rows.map(([k, v]) => (
@@ -381,7 +381,7 @@ export function ClosingCta() {
       <div className="relative isolate overflow-hidden rounded-[22px] bg-neutral-900 px-5 py-24 text-center text-white sm:rounded-[28px] sm:py-32">
         <Image src={dusk} alt="" placeholder="blur" fill sizes="100vw" className="-z-10 object-cover object-[center_30%]" />
         <div aria-hidden className="absolute inset-0 -z-10 bg-black/45" />
-        <h2 className="mx-auto max-w-[16ch] font-serif text-[2.8rem] leading-[1.02] tracking-[-0.03em] text-balance sm:text-[4.2rem]">
+        <h2 className="mx-auto max-w-[16ch] font-heading font-semibold text-[2.8rem] leading-[1.02] tracking-[-0.03em] text-balance sm:text-[4.2rem]">
           Know the culture before you brief the creative.
         </h2>
         <EmailCapture id="closing-email" className="mx-auto mt-10" />

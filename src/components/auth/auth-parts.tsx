@@ -11,7 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 export function AuthHeading({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div className="text-center">
-      <h1 className="font-serif text-[2.4rem] leading-[1.05] tracking-[-0.03em] text-balance sm:text-[2.75rem]">
+      <h1 className="font-heading font-semibold text-[2.4rem] leading-[1.05] tracking-[-0.03em] text-balance sm:text-[2.75rem]">
         {title}
       </h1>
       <p className="mx-auto mt-3 max-w-88 text-[15px] leading-relaxed text-pretty text-muted-foreground">

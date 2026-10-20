@@ -70,7 +70,7 @@ export function TerritoryCard({ className }: { className?: string }) {
         <div className="min-w-0">
           <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase">Culture Map · US</p>
           <p className="mt-0.5 truncate text-[15px] font-medium">
-            Patagonia <span className="font-serif text-muted-foreground italic">vs</span> The North Face
+            Patagonia <span className="font-heading font-semibold text-muted-foreground">vs</span> The North Face
           </p>
         </div>
         <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-muted-foreground">
@@ -101,7 +101,7 @@ export function TerritoryCard({ className }: { className?: string }) {
         }}
       />
 
-      <figcaption className="border-t px-5 py-3.5 font-serif text-[15px] leading-snug text-muted-foreground italic">
+      <figcaption className="border-t px-5 py-3.5 text-[15px] leading-snug text-muted-foreground">
         Environment and wellbeing, against toughness and survival.
       </figcaption>
     </figure>

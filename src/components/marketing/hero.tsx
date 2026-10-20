@@ -28,7 +28,7 @@ export function Hero() {
               <span className="size-1.5 rounded-full bg-ember" aria-hidden />
               Built on Qloo&rsquo;s taste graph
             </p>
-            <h1 className="mt-6 max-w-[13ch] animate-rise font-serif text-[3.4rem] leading-[0.98] tracking-[-0.035em] text-balance [animation-delay:60ms] sm:text-[4.6rem] lg:text-[5.6rem]">
+            <h1 className="mt-6 max-w-[13ch] animate-rise font-heading font-semibold text-[3.4rem] leading-[0.98] tracking-[-0.035em] text-balance [animation-delay:60ms] sm:text-[4.6rem] lg:text-[5.6rem]">
               See the culture your market lives in.
             </h1>
             <p className="mt-6 max-w-[34rem] animate-rise text-[17px] leading-relaxed text-white/80 text-pretty [animation-delay:120ms]">

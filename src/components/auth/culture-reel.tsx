@@ -112,7 +112,7 @@ export function CultureReel({ className }: { className?: string }) {
                 <span className="size-1.5 shrink-0 rounded-full bg-ember" aria-hidden />
                 {reading.eyebrow}
               </p>
-              <h2 className="mt-3 font-serif text-[2rem] leading-[1.05] tracking-[-0.02em] text-balance">
+              <h2 className="mt-3 font-heading font-semibold text-[2rem] leading-[1.05] tracking-[-0.02em] text-balance">
                 {reading.title}
               </h2>
             </div>
@@ -135,7 +135,7 @@ export function CultureReel({ className }: { className?: string }) {
             ))}
           </dl>
 
-          <p className="mt-4 font-serif text-[15px] text-white/70 italic">{reading.note}</p>
+          <p className="mt-4 text-[15px] text-white/70">{reading.note}</p>
 
           <div className="absolute inset-x-0 bottom-0 flex gap-1 px-6 sm:px-7" aria-hidden>
             {READINGS.map((r, i) => (

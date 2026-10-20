@@ -18,13 +18,13 @@ export function Logo({ className, href = "/" }: { className?: string; href?: str
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center gap-2 rounded-md font-serif text-[1.35rem] leading-none tracking-[-0.02em] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "inline-flex items-center gap-2 rounded-md text-[17px] font-semibold leading-none tracking-[-0.02em] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         className,
       )}
     >
       <LogoMark />
       <span>
-        Cultural <span className="italic">X-Ray</span>
+        Cultural <span className="font-normal text-muted-foreground">X-Ray</span>
       </span>
     </Link>
   );

@@ -38,7 +38,7 @@ export default function DashboardPage() {
             <span className="flex size-11 items-center justify-center rounded-full border text-muted-foreground">
               <MapIcon className="size-5" strokeWidth={1.5} />
             </span>
-            <p className="mt-4 font-serif text-2xl tracking-[-0.02em]">No maps yet</p>
+            <p className="mt-4 font-semibold text-2xl tracking-[-0.02em]">No maps yet</p>
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
               Building a map from a brand name arrives with the Culture Map engine. Until then, your account is ready and waiting.
             </p>
@@ -58,7 +58,7 @@ async function Greeting() {
   return (
     <div>
       <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Workspace</p>
-      <h1 className="mt-2 font-serif text-4xl tracking-[-0.03em]">Welcome, {first}</h1>
+      <h1 className="mt-2 font-semibold text-4xl tracking-[-0.03em]">Welcome, {first}</h1>
     </div>
   );
 }
