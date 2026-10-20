@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { CircleAlertIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { CircleAlertIcon, CircleCheckIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -21,7 +22,7 @@ export function AuthHeading({ title, subtitle }: { title: string; subtitle: stri
   );
 }
 
-const pill = "h-12 w-full rounded-full text-[15px] active:scale-[0.985] active:translate-y-0 transition-[background-color,box-shadow,transform] duration-150";
+const pill = "h-12 w-full rounded-full text-[15px] font-semibold active:scale-[0.985] active:translate-y-0 transition-[background-color,box-shadow,transform] duration-150";
 
 export function GoogleButton({ label, pending, onClick }: { label: string; pending: boolean; onClick: () => void }) {
   return (
@@ -54,9 +55,9 @@ export function AuthDivider({ children }: { children: React.ReactNode }) {
 const inputClass =
   "h-12 rounded-xl bg-card px-4 text-[15px] shadow-none placeholder:text-muted-foreground/80 hover:border-foreground/25 focus-visible:border-foreground/60 focus-visible:ring-foreground/10 md:text-[15px] dark:bg-input/20";
 
-type FieldProps = React.ComponentProps<"input"> & { label: string; error?: string; hint?: string };
+type FieldProps = React.ComponentProps<"input"> & { label: string; error?: string; hint?: string; labelAction?: React.ReactNode };
 
-export function TextField({ label, error, hint, className, ...props }: FieldProps) {
+export function TextField({ label, error, hint, className, labelAction: _labelAction, ...props }: FieldProps) {
   const id = props.id ?? props.name;
   return (
     <Field data-invalid={!!error || undefined} className={cn("gap-1.5", className)}>
@@ -69,14 +70,17 @@ export function TextField({ label, error, hint, className, ...props }: FieldProp
   );
 }
 
-export function PasswordField({ label, error, hint, ...props }: FieldProps) {
+export function PasswordField({ label, error, hint, labelAction, ...props }: FieldProps) {
   const [visible, setVisible] = useState(false);
   const id = props.id ?? props.name;
   return (
     <Field data-invalid={!!error || undefined} className="gap-1.5">
-      <FieldLabel htmlFor={id} className="text-[13px]">
-        {label}
-      </FieldLabel>
+      <div className="flex items-center justify-between">
+        <FieldLabel htmlFor={id} className="text-[13px]">
+          {label}
+        </FieldLabel>
+        {labelAction}
+      </div>
       <div className="relative">
         <Input
           id={id}
@@ -122,13 +126,28 @@ function FieldNote({ id, error, hint }: { id: string; error?: string; hint?: str
   return null;
 }
 
-export function FormAlert({ message }: { message: string | null }) {
+export function FormAlert({ message, tone = "error" }: { message: string | null; tone?: "error" | "info" }) {
   if (!message) return null;
+  const Icon = tone === "error" ? CircleAlertIcon : CircleCheckIcon;
   return (
-    <div role="alert" className="flex items-start gap-2.5 rounded-xl bg-destructive/[0.06] px-4 py-3 text-[14px] ring-1 ring-destructive/25 ring-inset">
-      <CircleAlertIcon className="mt-0.5 size-4 shrink-0 text-destructive" strokeWidth={1.75} aria-hidden />
+    <div
+      role={tone === "error" ? "alert" : "status"}
+      className={cn(
+        "flex items-start gap-2.5 rounded-xl px-4 py-3 text-[14px] ring-1 ring-inset",
+        tone === "error" ? "bg-destructive/[0.06] ring-destructive/25" : "bg-muted ring-border",
+      )}
+    >
+      <Icon className={cn("mt-0.5 size-4 shrink-0", tone === "error" ? "text-destructive" : "text-foreground")} strokeWidth={1.75} aria-hidden />
       <span>{message}</span>
     </div>
+  );
+}
+
+export function TextLinkButton({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} className="text-[13px] font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline">
+      {children}
+    </Link>
   );
 }
 

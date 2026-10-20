@@ -5,16 +5,30 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useResetOnHide } from "@/hooks/use-reset-on-hide";
 import { signIn } from "@/lib/auth-client";
-import { AuthDivider, AuthHeading, FormAlert, GoogleButton, PasswordField, SubmitButton, TextField } from "./auth-parts";
 import { authMessage } from "@/lib/errors";
+import { reportError } from "@/lib/report";
+import { AuthDivider, AuthHeading, FormAlert, GoogleButton, PasswordField, SubmitButton, TextField, TextLinkButton } from "./auth-parts";
 import { fieldErrors, loginSchema, type FieldErrors } from "./schemas";
 
 type Values = { email: string; password: string };
+
+/** Messages for the reasons someone can land on /login. */
+function arrivalNotice(params: URLSearchParams): { message: string; tone: "error" | "info" } | null {
+  const error = params.get("error")?.toUpperCase();
+  if (error === "INVALID_TOKEN" || error === "TOKEN_EXPIRED") {
+    return { message: "That link has expired or was already used. Log in, and we'll send a fresh one if you still need it.", tone: "error" };
+  }
+  if (error) return { message: authMessage({ code: error }), tone: "error" };
+  if (params.has("reset")) return { message: "Password changed. Log in with your new password.", tone: "info" };
+  if (params.has("expired")) return { message: "Your session ended. Log in again to pick up where you left off.", tone: "info" };
+  return null;
+}
 
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
+  const notice = arrivalNotice(params);
 
   const [values, setValues] = useState<Values>({ email: params.get("email") ?? "", password: "" });
   const [touched, setTouched] = useState<Partial<Record<keyof Values, boolean>>>({});
@@ -43,36 +57,54 @@ export function LoginForm() {
     setSubmitted(true);
     if (Object.keys(errors).length) return;
     setPending("email");
-    const { error } = await signIn.email({ email: values.email, password: values.password });
-    if (error) {
-      setFormError(authMessage(error));
+    try {
+      const email = values.email.trim().toLowerCase();
+      const { error } = await signIn.email({ email, password: values.password, callbackURL: next });
+      if (error) {
+        // Unconfirmed accounts get a fresh link from the server; send them to check their inbox.
+        if (error.code === "EMAIL_NOT_VERIFIED") {
+          router.push(`/verify-email?${new URLSearchParams({ email, next, resent: "1" })}`);
+          return;
+        }
+        setFormError(authMessage(error));
+        setPending(null);
+        return;
+      }
+      router.replace(next);
+      router.refresh();
+    } catch (error) {
+      reportError(error, { where: "auth.login.email" });
+      setFormError(authMessage({}));
       setPending(null);
-      return;
     }
-    router.replace(next);
-    router.refresh();
   }
 
   async function onGoogle() {
     setPending("google");
     setFormError(null);
-    const { error } = await signIn.social({ provider: "google", callbackURL: next, errorCallbackURL: "/login" });
-    if (error) {
-      setFormError(authMessage(error));
+    try {
+      const { error } = await signIn.social({ provider: "google", callbackURL: next, newUserCallbackURL: "/onboarding", errorCallbackURL: "/login" });
+      if (error) {
+        setFormError(authMessage(error));
+        setPending(null);
+      }
+    } catch (error) {
+      reportError(error, { where: "auth.login.google" });
+      setFormError(authMessage({}));
       setPending(null);
     }
   }
 
   return (
     <div className="space-y-8">
-      <AuthHeading title="Log in to your account" subtitle="Pick up your culture maps and briefs where you left them." />
+      <AuthHeading title="Welcome back" subtitle="Pick up your culture maps and briefs where you left them." />
 
       <div className="space-y-6">
-        <GoogleButton label="Log in with Google" pending={pending === "google"} onClick={onGoogle} />
+        <GoogleButton label="Continue with Google" pending={pending === "google"} onClick={onGoogle} />
         <AuthDivider>or use your email</AuthDivider>
 
         <form noValidate onSubmit={onSubmit} className="space-y-4">
-          <FormAlert message={formError} />
+          <FormAlert message={formError ?? notice?.message ?? null} tone={formError ? "error" : (notice?.tone ?? "error")} />
           <TextField
             label="Email"
             name="email"
@@ -94,6 +126,7 @@ export function LoginForm() {
             onChange={update("password")}
             onBlur={() => setTouched((t) => ({ ...t, password: true }))}
             error={show("password")}
+            labelAction={<TextLinkButton href={`/forgot-password${values.email ? `?email=${encodeURIComponent(values.email)}` : ""}`}>Forgot password?</TextLinkButton>}
           />
           <div className="pt-2">
             <SubmitButton pending={pending === "email"}>Log in</SubmitButton>
@@ -112,6 +145,6 @@ export function LoginForm() {
 }
 
 /** Only follow same-site paths after login. */
-function safeNext(value: string | null) {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
+export function safeNext(value: string | null) {
+  return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : "/dashboard";
 }
