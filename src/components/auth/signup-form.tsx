@@ -93,6 +93,8 @@ export function SignupForm() {
   }
 
   const joining = Boolean(invite || claim);
+  const loginQuery = new URLSearchParams({ ...(values.email && { email: values.email }), ...(joining && { next: callbackURL }) }).toString();
+  const loginHref = loginQuery ? `/login?${loginQuery}` : "/login";
 
   return (
     <div className="space-y-8">
@@ -187,7 +189,7 @@ export function SignupForm() {
       <p className="text-center text-[14px] text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href={`/login${params.size ? `?${new URLSearchParams({ ...(values.email && { email: values.email }), ...(joining && { next: callbackURL }) })}` : ""}`}
+          href={loginHref}
           className="font-medium text-foreground underline decoration-foreground/30 underline-offset-4 transition-colors hover:decoration-foreground"
         >
           Log in
