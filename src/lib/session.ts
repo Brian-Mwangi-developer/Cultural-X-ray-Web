@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
@@ -93,11 +94,11 @@ function toUser(body: { user: MeResponse; activeOrganizationId: string | null; m
   return { ...body.user, activeOrganizationId: body.activeOrganizationId, memberships: body.memberships, preferences: body.preferences, hasPassword: body.hasPassword };
 }
 
-/** The signed-in user, or a redirect to /login. Call inside a Suspense boundary. */
-export async function requireUser(): Promise<CurrentUser> {
+/** The signed-in user, or a redirect to /login. Call inside a Suspense boundary. One fetch per request. */
+export const requireUser = cache(async (): Promise<CurrentUser> => {
   const body = await backendGet<Parameters<typeof toUser>[0]>("/api/v1/me");
   return toUser(body!);
-}
+});
 
 /** The signed-in user, or null for visitors. For pages that work either way (invites, claims). */
 export async function currentUser(): Promise<CurrentUser | null> {
@@ -105,10 +106,48 @@ export async function currentUser(): Promise<CurrentUser | null> {
   return body ? toUser(body) : null;
 }
 
-/** Org context for a member, or the not-found page for everyone else. */
-export async function requireOrg(slug: string): Promise<OrgContext> {
+/** Org context for a member, or the not-found page for everyone else. One fetch per request. */
+export const requireOrg = cache(async (slug: string): Promise<OrgContext> => {
   return (await backendGet<OrgContext>(`/api/v1/orgs/${encodeURIComponent(slug)}`))!;
-}
+});
+
+export type ClientSummary = {
+  id: string;
+  status: "ACTIVE" | "REQUESTED" | "DECLINED";
+  origin: "AGENCY_REQUEST" | "WORKSPACE_CODE" | "AGENCY_CREATED";
+  access: "VIEW" | "EDIT" | "MANAGE" | null;
+  accessRequested: "VIEW" | "EDIT" | "MANAGE";
+  requestedAt: string;
+  workspace: { id: string; name: string; slug: string; markets: ("US" | "GB")[]; rivals: string[] };
+  owner: { name: string; email: string } | null;
+  claim: { email: string; status: string; expired: boolean; expiresAt: string } | null;
+  heldInTrust: boolean;
+  billedTo: string | null;
+  team: number;
+};
+
+/** An agency's clients the signed-in member can see. */
+export const agencyClients = cache(async (agencyId: string): Promise<ClientSummary[]> => {
+  return (await backendGet<{ clients: ClientSummary[] }>(`/api/v1/orgs/${agencyId}/clients`))!.clients;
+});
+
+export type AgencyConnection = {
+  id: string;
+  status: "ACTIVE" | "REQUESTED";
+  origin: ClientSummary["origin"];
+  access: ClientSummary["access"];
+  accessRequested: ClientSummary["accessRequested"];
+  requestedAt: string;
+  decidedAt: string | null;
+  agency: { id: string; name: string; logo: string | null };
+  requestedBy: { name: string; email: string } | null;
+  people: string[];
+};
+
+/** The agencies connected to (or asking to join) a brand workspace. */
+export const workspaceAgencies = cache(async (workspaceId: string): Promise<AgencyConnection[]> => {
+  return (await backendGet<{ agencies: AgencyConnection[] }>(`/api/v1/orgs/${workspaceId}/agencies`))!.agencies;
+});
 
 /** Where a signed-in person should land: their active org, their first org, or onboarding. */
 export function homeFor(user: CurrentUser): string {

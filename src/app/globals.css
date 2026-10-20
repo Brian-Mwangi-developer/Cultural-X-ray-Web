@@ -184,3 +184,24 @@
     animation: none;
   }
 }
+/* Appearance preferences, set on <html> from the profile. */
+:root[data-reduce-motion] *,
+:root[data-reduce-motion] *::before,
+:root[data-reduce-motion] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+:root {
+  --row-y: 0.875rem;
+}
+
+:root[data-density="compact"] {
+  --row-y: 0.5rem;
+}
+
+:root[data-evidence="hidden"] [data-evidence] {
+  display: none;
+}

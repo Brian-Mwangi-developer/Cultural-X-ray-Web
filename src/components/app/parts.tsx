@@ -93,9 +93,13 @@ export type Territory = "yours" | "contested" | "theirs";
 const TERRITORY_LABEL: Record<Territory, string> = { yours: "Yours", contested: "Contested", theirs: "Theirs" };
 
 /** Filled = yours, half = contested, ring = theirs. Shape carries it; ember only fills "yours". */
-export function TerritoryGlyph({ kind, className }: { kind: Territory; className?: string }) {
+export function TerritoryGlyph({ kind, className, decorative }: { kind: Territory; className?: string; /** Set when the word is already next to it. */ decorative?: boolean }) {
   return (
-    <svg viewBox="0 0 12 12" aria-label={TERRITORY_LABEL[kind]} role="img" className={cn("size-2.5 shrink-0", className)}>
+    <svg
+      viewBox="0 0 12 12"
+      {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": TERRITORY_LABEL[kind] })}
+      className={cn("size-2.5 shrink-0", className)}
+    >
       {kind === "yours" && <circle cx="6" cy="6" r="5" fill="var(--ember)" />}
       {kind === "contested" && (
         <>
@@ -121,9 +125,9 @@ export function Chip({ children, className, icon: Icon }: { children: React.Reac
 }
 
 /** Where a claim comes from. Every number on a map links back to one of these. */
-export function Evidence({ children, mono, className }: { children: React.ReactNode; mono?: boolean; className?: string }) {
+export function Evidence({ children, mono, className, always }: { children: React.ReactNode; mono?: boolean; className?: string; /** Briefs keep their sources even when inline chips are turned off. */ always?: boolean }) {
   return (
-    <span className={cn("inline-flex h-5 items-center gap-1 rounded-md border bg-muted px-1.5 text-[11px] whitespace-nowrap text-foreground/80", mono && "font-mono", className)}>
+    <span data-evidence={always ? undefined : ""} className={cn("inline-flex h-5 items-center gap-1 rounded-md border bg-muted px-1.5 text-[11px] whitespace-nowrap text-foreground/80", mono && "font-mono", className)}>
       <LinkIcon className="size-[11px] text-muted-foreground" strokeWidth={2} aria-hidden />
       {children}
     </span>
@@ -168,7 +172,8 @@ export function initialOf(name: string) {
 }
 
 export function initialsOf(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const parts = words.length > 1 ? words.filter((w) => !/^(the|a|an|of|and|&)$/i.test(w)) : words;
   if (!parts.length) return "?";
   return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? (parts.at(-1)?.[0] ?? "") : "")).toUpperCase();
 }
