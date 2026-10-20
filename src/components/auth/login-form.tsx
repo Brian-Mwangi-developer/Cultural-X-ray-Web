@@ -6,7 +6,8 @@ import { useState } from "react";
 import { useResetOnHide } from "@/hooks/use-reset-on-hide";
 import { signIn } from "@/lib/auth-client";
 import { AuthDivider, AuthHeading, FormAlert, GoogleButton, PasswordField, SubmitButton, TextField } from "./auth-parts";
-import { authMessage, fieldErrors, loginSchema, type FieldErrors } from "./schemas";
+import { authMessage } from "@/lib/errors";
+import { fieldErrors, loginSchema, type FieldErrors } from "./schemas";
 
 type Values = { email: string; password: string };
 
