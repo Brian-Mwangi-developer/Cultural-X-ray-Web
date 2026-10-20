@@ -53,6 +53,7 @@ export type OrgContext = {
     joinDomain: string | null;
     joinRole: string | null;
     connectCode: string | null;
+    metadata: string | null;
     createdAt: string;
     custodian: { id: string; name: string; slug: string } | null;
   };
