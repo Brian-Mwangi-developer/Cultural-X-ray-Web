@@ -59,6 +59,8 @@ export function fromAuthError(error: BetterAuthError): AppError {
   if (error.status === 429) return new AppError("Too many attempts. Wait a minute, then try again.", "RATE_LIMITED", 429);
   const known = AUTH_MESSAGES[code];
   if (known) return new AppError(known, code, error.status ?? 400);
+  // Our own Better Auth hooks use XRAY_ codes, and their messages are written for people.
+  if (code.startsWith("XRAY_") && error.message) return new AppError(error.message, code, error.status ?? 400);
   if (error.status === 0 || error.status === undefined) return new AppError(NETWORK_MESSAGE, "NETWORK");
   if (error.status === 401) return new AppError("Your session ended. Log in again.", "UNAUTHORIZED", 401);
   if (error.status === 403) return new AppError("You don't have permission to do that.", "FORBIDDEN", 403);
