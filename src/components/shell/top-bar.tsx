@@ -20,7 +20,7 @@ export function TopBar({ crumbs, actions, className }: { crumbs: Crumb[]; action
             return (
               <Fragment key={`${c.label}-${i}`}>
                 {i > 0 && (
-                  <li aria-hidden className="text-faint">
+                  <li aria-hidden className={cn("text-faint", i <= crumbs.length - 2 && "hidden md:block")}>
                     /
                   </li>
                 )}

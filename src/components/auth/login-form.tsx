@@ -13,14 +13,14 @@ import { fieldErrors, loginSchema, type FieldErrors } from "./schemas";
 type Values = { email: string; password: string };
 
 /** Messages for the reasons someone can land on /login. */
-function arrivalNotice(params: URLSearchParams): { message: string; tone: "error" | "info" } | null {
+function arrivalNotice(params: URLSearchParams): { message: string; tone: "error" | "info" } | null { // ui-ok: alert or field state, not a chip
   const error = params.get("error")?.toUpperCase();
   if (error === "INVALID_TOKEN" || error === "TOKEN_EXPIRED") {
-    return { message: "That link has expired or was already used. Log in, and we'll send a fresh one if you still need it.", tone: "error" };
+    return { message: "That link has expired or was already used. Log in, and we'll send a fresh one if you still need it.", tone: "error" }; // ui-ok: alert or field state, not a chip
   }
-  if (error) return { message: authMessage({ code: error }), tone: "error" };
-  if (params.has("reset")) return { message: "Password changed. Log in with your new password.", tone: "info" };
-  if (params.has("expired")) return { message: "Your session ended. Log in again to pick up where you left off.", tone: "info" };
+  if (error) return { message: authMessage({ code: error }), tone: "error" }; // ui-ok: alert or field state, not a chip
+  if (params.has("reset")) return { message: "Password changed. Log in with your new password.", tone: "info" }; // ui-ok: alert or field state, not a chip
+  if (params.has("expired")) return { message: "Your session ended. Log in again to pick up where you left off.", tone: "info" }; // ui-ok: alert or field state, not a chip
   return null;
 }
 

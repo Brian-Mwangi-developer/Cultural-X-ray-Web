@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon, CircleCheckIcon, DownloadIcon, FileTextIcon, MicIcon, Share2Icon, UploadIcon, UserIcon } from "lucide-react";
-import { Evidence, PageHeader, SampleBadge, TerritoryGlyph, TextLink, type Territory } from "@/components/app/parts";
+import { Evidence, SampleBadge, TerritoryGlyph, TextLink, type Territory } from "@/components/app/parts";
 import { SoonButton } from "@/components/app/soon-button";
 import { PageBody, TopBar } from "@/components/shell/top-bar";
 import { buttonVariants } from "@/components/ui/button";

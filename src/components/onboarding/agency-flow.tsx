@@ -199,7 +199,7 @@ function TeamStep({ org, user }: { org: OrgContext; user: { email: string } }) {
     let invalid = false;
     for (const row of filled) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email.trim())) {
-        update(row.key, { status: "error", error: "Check this email address." });
+        update(row.key, { status: "error", error: "Check this email address." }); // ui-ok: alert or field state, not a chip
         invalid = true;
       }
     }
@@ -214,7 +214,7 @@ function TeamStep({ org, user }: { org: OrgContext; user: { email: string } }) {
         sent++;
       } catch (error) {
         if (!(error instanceof AppError && error.expected)) reportError(error, { where: "onboarding.agency.invite" });
-        update(row.key, { status: "error", error: userMessage(error) });
+        update(row.key, { status: "error", error: userMessage(error) }); // ui-ok: alert or field state, not a chip
       }
     }
     setPending(false);

@@ -74,7 +74,7 @@ export function VerifyEmail() {
         </p>
       </div>
 
-      {params.has("resent") && <FormAlert tone="info" message="Your email isn't confirmed yet, so we've sent a fresh link." />}
+      {params.has("resent") && <FormAlert tone="info" message="Your email isn't confirmed yet, so we've sent a fresh link." />} {/* ui-ok: alert or field state, not a chip */}
 
       <div className="space-y-3">
         {inbox && (

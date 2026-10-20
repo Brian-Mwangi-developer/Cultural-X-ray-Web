@@ -57,13 +57,16 @@ const inputClass =
 
 type FieldProps = React.ComponentProps<"input"> & { label: string; error?: string; hint?: string; labelAction?: React.ReactNode };
 
-export function TextField({ label, error, hint, className, labelAction: _labelAction, ...props }: FieldProps) {
+export function TextField({ label, error, hint, className, labelAction, ...props }: FieldProps) {
   const id = props.id ?? props.name;
   return (
     <Field data-invalid={!!error || undefined} className={cn("gap-1.5", className)}>
-      <FieldLabel htmlFor={id} className="text-[13px]">
-        {label}
-      </FieldLabel>
+      <div className="flex items-center justify-between">
+        <FieldLabel htmlFor={id} className="text-[13px]">
+          {label}
+        </FieldLabel>
+        {labelAction}
+      </div>
       <Input id={id} aria-invalid={!!error || undefined} aria-describedby={error || hint ? `${id}-note` : undefined} className={inputClass} {...props} />
       <FieldNote id={`${id}-note`} error={error} hint={hint} />
     </Field>
@@ -126,7 +129,7 @@ function FieldNote({ id, error, hint }: { id: string; error?: string; hint?: str
   return null;
 }
 
-export function FormAlert({ message, tone = "error" }: { message: string | null; tone?: "error" | "info" }) {
+export function FormAlert({ message, tone = "error" }: { message: string | null; tone?: "error" | "info" }) { // ui-ok: alert or field state, not a chip
   if (!message) return null;
   const Icon = tone === "error" ? CircleAlertIcon : CircleCheckIcon;
   return (

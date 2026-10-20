@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { CheckIcon, CircleAlertIcon, CircleCheckIcon, PlusIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -193,36 +193,39 @@ export function suggestSlug(name: string) {
     .slice(0, 40);
 }
 
-/** Debounced availability check against the backend. */
+/** Debounced availability check against the backend. "Checking" is derived, so the effect only ever reports results. */
 export function useSlugCheck(slug: string, { skip = false } = {}): SlugState {
-  const [state, setState] = useState<SlugState>({ status: "idle" });
+  const [result, setResult] = useState<{ slug: string } & SlugState>({ slug: "", status: "idle" });
+  const short = slug.length < 3;
+
   useEffect(() => {
-    if (skip || slug.length < 3) {
-      setState({ status: "idle", reason: slug && slug.length < 3 ? "Use at least 3 characters." : null });
-      return;
-    }
-    setState({ status: "checking" });
+    if (skip || short) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const result = await api<{ available: boolean; reason: string | null }>(`/slugs/${encodeURIComponent(slug)}`, { signal: controller.signal });
-        setState({ status: result.available ? "available" : "taken", reason: result.reason });
+        const answer = await api<{ available: boolean; reason: string | null }>(`/slugs/${encodeURIComponent(slug)}`, { signal: controller.signal });
+        setResult({ slug, status: answer.available ? "available" : "taken", reason: answer.reason });
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setState({ status: "error", reason: "We couldn't check this address. You can still continue." });
+        setResult({ slug, status: "error", reason: "We couldn't check this address. You can still continue." }); // ui-ok: alert or field state, not a chip
       }
     }, 350);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [slug, skip]);
-  return state;
+  }, [slug, skip, short]);
+
+  if (skip) return { status: "idle" };
+  if (short) return { status: "idle", reason: slug ? "Use at least 3 characters." : null };
+  if (result.slug !== slug) return { status: "checking" };
+  return { status: result.status, reason: result.reason };
 }
 
+const subscribeNever = () => () => {};
+
 export function SlugInput({ id, value, onChange, state }: { id: string; value: string; onChange: (value: string) => void; state: SlugState }) {
-  const [host, setHost] = useState("cultural-xray.app");
-  useEffect(() => setHost(window.location.host), []);
+  const host = useSyncExternalStore(subscribeNever, () => window.location.host, () => "cultural-xray.app");
   return (
     <div
       className={cn(
