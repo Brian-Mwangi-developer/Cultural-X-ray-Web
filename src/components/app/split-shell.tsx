@@ -20,7 +20,7 @@ export function SplitShell({
 }) {
   return (
     <div className="grid min-h-svh bg-background lg:grid-cols-2">
-      <main className="flex min-h-svh flex-col px-5 py-6 sm:px-10 lg:px-16">
+      <main className="flex min-h-svh min-w-0 flex-col px-5 py-6 sm:px-10 lg:px-16">
         <header className="flex items-center justify-between gap-4">
           <Logo href="/dashboard" />
           {meta && <div className="truncate text-[13px] text-muted-foreground">{meta}</div>}
