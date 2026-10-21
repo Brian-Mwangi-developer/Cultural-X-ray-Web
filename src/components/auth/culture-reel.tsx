@@ -95,7 +95,7 @@ export function CultureReel({ className }: { className?: string }) {
           placeholder="blur"
           sizes="(min-width: 1024px) 45vw, 0px"
           className={cn(
-            "object-cover transition-[opacity,transform] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "object-cover transition-[opacity,transform] duration-1200 ease-[cubic-bezier(0.22,1,0.36,1)]",
             i === index ? "scale-100 opacity-100" : "scale-[1.04] opacity-0",
           )}
         />
@@ -139,7 +139,7 @@ export function CultureReel({ className }: { className?: string }) {
 
           <div className="absolute inset-x-0 bottom-0 flex gap-1 px-6 sm:px-7" aria-hidden>
             {READINGS.map((r, i) => (
-              <span key={r.title} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/15">
+              <span key={r.title} className="h-0.75 flex-1 overflow-hidden rounded-full bg-white/15">
                 <span
                   key={i === index ? `active-${index}` : r.title}
                   className={cn(

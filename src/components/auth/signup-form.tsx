@@ -121,7 +121,7 @@ export function SignupForm() {
               >
                 <input type="radio" name="kind" value={k.value} checked={kind === k.value} onChange={() => setKind(k.value)} className="sr-only" />
                 <span className="flex items-center justify-between">
-                  <k.icon className={cn("size-[18px]", kind === k.value ? "text-ember-ink" : "text-muted-foreground")} strokeWidth={1.75} aria-hidden />
+                  <k.icon className={cn("size-4.5", kind === k.value ? "text-ember-ink" : "text-muted-foreground")} strokeWidth={1.75} aria-hidden />
                   <span
                     aria-hidden
                     className={cn("flex size-4 items-center justify-center rounded-full border", kind === k.value ? "border-ember" : "border-input")}
