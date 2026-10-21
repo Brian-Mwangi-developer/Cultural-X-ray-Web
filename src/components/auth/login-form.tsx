@@ -29,6 +29,8 @@ export function LoginForm() {
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
   const notice = arrivalNotice(params);
+  // Coming from an invitation or claim, the address is the one it was sent to: don't let it drift.
+  const lockedEmail = /^\/(invite|claim)\//.test(next) ? params.get("email") : null;
 
   const [values, setValues] = useState<Values>({ email: params.get("email") ?? "", password: "" });
   const [touched, setTouched] = useState<Partial<Record<keyof Values, boolean>>>({});
@@ -116,6 +118,7 @@ export function LoginForm() {
             onChange={update("email")}
             onBlur={() => setTouched((t) => ({ ...t, email: true }))}
             error={show("email")}
+            readOnly={Boolean(lockedEmail)}
           />
           <PasswordField
             label="Password"

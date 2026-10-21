@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AgencyFlow } from "@/components/onboarding/agency-flow";
 import { BrandFlow } from "@/components/onboarding/brand-flow";
 import { Chooser, type Joinable } from "@/components/onboarding/chooser";
+import { SessionGuard } from "@/components/auth/session-guard";
 import { backendGet, requireOrg, requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Set up" };
@@ -31,14 +32,29 @@ async function Onboarding({ searchParams }: { searchParams: PageProps<"/onboardi
   if (org && !["owner", "admin"].includes(org.membership.role)) notFound();
 
   if (kind === "agency" && (!org || org.organization.kind === "AGENCY")) {
-    return <AgencyFlow step={step} org={org} user={{ email: user.email, name: user.name }} />;
+    return (
+      <>
+        <SessionGuard userId={user.id} />
+        <AgencyFlow step={step} org={org} user={{ email: user.email, name: user.name }} />
+      </>
+    );
   }
   if (kind === "brand" && (!org || org.organization.kind === "WORKSPACE")) {
-    return <BrandFlow step={step} org={org} />;
+    return (
+      <>
+        <SessionGuard userId={user.id} />
+        <BrandFlow step={step} org={org} />
+      </>
+    );
   }
 
   const joinable = (await backendGet<{ organizations: Joinable[] }>("/api/v1/me/joinable"))?.organizations ?? [];
-  return <Chooser name={user.name} joinable={joinable} memberships={user.memberships} />;
+  return (
+    <>
+      <SessionGuard userId={user.id} />
+      <Chooser name={user.name} joinable={joinable} memberships={user.memberships} />
+    </>
+  );
 }
 
 function OnboardingSkeleton() {

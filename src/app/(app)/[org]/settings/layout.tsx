@@ -17,7 +17,7 @@ async function Shell({ params, children }: { params: LayoutProps<"/[org]/setting
   const [user, org, jar] = await Promise.all([requireUser(), requireOrg(slug), cookies()]);
   const sidebarOpen = jar.get("sidebar_state")?.value !== "false";
   return (
-    <SettingsShell sidebarOpen={sidebarOpen} org={org} preferences={user.preferences}>
+    <SettingsShell sidebarOpen={sidebarOpen} userId={user.id} org={org} preferences={user.preferences}>
       {children}
     </SettingsShell>
   );

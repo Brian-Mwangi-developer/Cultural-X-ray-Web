@@ -32,7 +32,7 @@ import { agencyNav, clientNav, isActive, ownerNav, type NavItem } from "./nav";
 import { OrgSwitcher } from "./org-switcher";
 import { ProfileMenu } from "./profile-menu";
 
-export type ShellUser = { name: string; email: string; image: string | null; preferences: Preferences };
+export type ShellUser = { id: string; name: string; email: string; image: string | null; preferences: Preferences };
 
 const itemClass =
   "h-9 gap-2.5 rounded-[10px] px-2.5 text-[14px] text-foreground/85 [&_svg]:size-[17px] [&_svg]:text-foreground/70 data-active:bg-card data-active:font-medium data-active:text-foreground data-active:shadow-[0_0_0_1px_var(--border)] data-active:[&_svg]:text-ember";

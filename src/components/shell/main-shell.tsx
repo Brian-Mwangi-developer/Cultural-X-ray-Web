@@ -1,6 +1,7 @@
 "use client";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SessionGuard } from "@/components/auth/session-guard";
 import { PreferencesSync } from "@/lib/preferences";
 import type { ClientSummary, Membership, OrgContext } from "@/lib/session";
 import { AppSidebar, type ShellUser } from "./app-sidebar";
@@ -37,6 +38,7 @@ export function MainShell({
   return (
     <CommandMenu links={links}>
       <PreferencesSync preferences={user.preferences} />
+      <SessionGuard userId={user.id} />
       <SidebarProvider defaultOpen={sidebarOpen} style={{ "--sidebar-width": "16.5rem" } as React.CSSProperties}>
         <AppSidebar user={user} org={org} memberships={memberships} clients={clients} />
         <SidebarInset className="min-w-0 border-l bg-background">{children}</SidebarInset>

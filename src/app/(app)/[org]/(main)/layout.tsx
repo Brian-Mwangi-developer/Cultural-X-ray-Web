@@ -20,7 +20,7 @@ async function Shell({ params, children }: { params: LayoutProps<"/[org]">["para
   return (
     <MainShell
       sidebarOpen={sidebarOpen}
-      user={{ name: user.name, email: user.email, image: user.image, preferences: user.preferences }}
+      user={{ id: user.id, name: user.name, email: user.email, image: user.image, preferences: user.preferences }}
       org={org}
       memberships={user.memberships}
       clients={clients}

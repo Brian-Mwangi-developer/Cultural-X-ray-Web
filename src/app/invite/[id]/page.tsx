@@ -4,6 +4,7 @@ import misty from "../../../../public/images/panel-misty.jpg";
 import { BrandMark } from "@/components/app/parts";
 import { PhotoAside, SplitShell } from "@/components/app/split-shell";
 import { InviteActions, type InvitePreview } from "@/components/invite/invite-actions";
+import { SessionGuard } from "@/components/auth/session-guard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROLE_COPY, type RoleName } from "@/lib/roles";
 import { currentUser } from "@/lib/session";
@@ -73,6 +74,7 @@ async function Invite({ params }: { params: PageProps<"/invite/[id]">["params"] 
         <Row label="For" value={preview.email} />
       </dl>
 
+      <SessionGuard userId={user?.id ?? null} />
       <InviteActions preview={preview} user={user ? { email: user.email, name: user.name } : null} />
     </div>
   );

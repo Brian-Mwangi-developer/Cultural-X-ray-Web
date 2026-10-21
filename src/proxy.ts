@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
 /** Pages anyone can open. Invite and claim pages greet visitors before they sign in. */
-const PUBLIC = [/^\/$/, /^\/login$/, /^\/signup$/, /^\/verify-email$/, /^\/forgot-password$/, /^\/reset-password$/, /^\/invite\/[^/]+$/, /^\/claim\/[^/]+$/];
+const PUBLIC = [/^\/$/, /^\/login$/, /^\/signup$/, /^\/verify-email$/, /^\/forgot-password$/, /^\/reset-password$/, /^\/invite\/[^/]+$/, /^\/claim\/[^/]+$/, /^\/switch-account$/];
 const SIGNED_OUT_ONLY = new Set(["/login", "/signup", "/forgot-password"]);
 
 // Optimistic check only: it looks for the cookie, not a valid session.

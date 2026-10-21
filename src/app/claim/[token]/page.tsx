@@ -5,6 +5,7 @@ import dusk from "../../../../public/images/panel-dusk.jpg";
 import { BrandMark } from "@/components/app/parts";
 import { PhotoAside, SplitShell } from "@/components/app/split-shell";
 import { ClaimActions, type ClaimPreview } from "@/components/claim/claim-actions";
+import { SessionGuard } from "@/components/auth/session-guard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { currentUser } from "@/lib/session";
 
@@ -91,6 +92,7 @@ async function Claim({ params }: { params: PageProps<"/claim/[token]">["params"]
           <Item icon={UsersIcon} title="Members" body="Just you, until you invite others" />
         </ul>
 
+        <SessionGuard userId={user?.id ?? null} />
         <ClaimActions token={token} preview={preview} user={user ? { email: user.email } : null} />
       </div>
     </SplitShell>
