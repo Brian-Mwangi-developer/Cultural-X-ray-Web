@@ -117,12 +117,13 @@ export function CultureMapView({ crumbs, brand, rivals, defaultMarket }: { crumb
           </div>
         </div>
 
-        <WideOnly what="The territory map">
-          <div className="grid gap-4 lg:grid-cols-3">
+        <WideOnly what="The territory map" className="@container">
+          {/* Three columns only when each gets room for full names; otherwise they stack. */}
+          <div className="grid gap-4 @4xl:grid-cols-3">
             {(["yours", "contested", "theirs"] as const).map((territory) => {
               const list = items.filter((i) => i.territory === territory);
               return (
-                <section key={territory} className="rounded-[14px] border bg-card p-3" aria-label={COLUMN_COPY[territory].title}>
+                <section key={territory} className="@container rounded-[14px] border bg-card p-3" aria-label={COLUMN_COPY[territory].title}>
                   <header className="flex items-center justify-between px-2 pt-1.5 pb-1">
                     <h2 className="flex items-center gap-2 text-[16px] font-medium">
                       <TerritoryGlyph kind={territory} className="size-3" decorative />
@@ -146,18 +147,15 @@ export function CultureMapView({ crumbs, brand, rivals, defaultMarket }: { crumb
                           <Cover item={item} />
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-[14px] font-medium">{item.name}</span>
-                            <span className="block text-[12.5px] text-muted-foreground">
+                            <span className="block truncate text-[12.5px] text-muted-foreground">
                               {item.kind} · {item.tier}
                             </span>
+                            {item.lean !== undefined && <Lean value={item.lean} className="mt-1.5 @xs:hidden" />}
                           </span>
                           {item.lean !== undefined ? (
-                            <span className="flex items-center gap-2 text-[12px] text-muted-foreground tabular-nums">
-                              {item.lean}
-                              <LeanBar left={item.lean} />
-                              {100 - item.lean}
-                            </span>
+                            <Lean value={item.lean} className="hidden shrink-0 @xs:flex" />
                           ) : (
-                            <span className="text-right">
+                            <span className="shrink-0 text-right">
                               <span className="block font-mono text-[13px] tabular-nums">{item.affinity?.toFixed(2)}</span>
                               <span className="block text-[10.5px] text-faint">affinity</span>
                             </span>
@@ -175,6 +173,17 @@ export function CultureMapView({ crumbs, brand, rivals, defaultMarket }: { crumb
 
       <EvidenceDrawer item={selected} brand={brand} rival={shownRivals[0]!} onClose={() => setSelected(null)} />
     </>
+  );
+}
+
+/** Brand share on the left, rival on the right. Beside the name in wide cards, under it in narrow ones. */
+function Lean({ value, className }: { value: number; className?: string }) {
+  return (
+    <span className={cn("flex items-center gap-2 text-[12px] text-muted-foreground tabular-nums", className)}>
+      {value}
+      <LeanBar left={value} />
+      {100 - value}
+    </span>
   );
 }
 
