@@ -2,6 +2,7 @@ import Image from "next/image";
 import { DownloadIcon, InfoIcon } from "lucide-react";
 import { Evidence, PageHeader, Panel, SampleBadge, TerritoryGlyph, WideOnly } from "@/components/app/parts";
 import { SoonButton } from "@/components/app/soon-button";
+import { AudienceGlobe } from "@/components/globe/audience-globe";
 import { PageBody, TopBar, type Crumb } from "@/components/shell/top-bar";
 import { AUDIENCE_INDEX, AUDIENCE_ROWS, LOW_CONFIDENCE, PLACES, TOP_CITIES } from "@/lib/sample-data";
 import { possessive } from "@/lib/intent";
@@ -41,6 +42,8 @@ export function AudienceView({ crumbs, brand, rivals, market }: { crumbs: Crumb[
             <Evidence className="hidden shrink-0 md:inline-flex">21 calls</Evidence>
           </div>
         </section>
+
+        <AudienceGlobe brand={brand} rival={columns[1] ?? "Rival"} />
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <Panel title="Audience index" action={<span className="rounded-full border px-2.5 py-0.5 text-[12.5px]">Market {market}</span>}>
