@@ -24,6 +24,7 @@ export type NavItem = { label: string; href: string; icon: LucideIcon; shortcut?
 export const ownerNav = (slug: string): NavItem[] => [
   { label: "Overview", href: `/${slug}`, icon: HouseIcon, exact: true },
   { label: "Culture Map", href: `/${slug}/map`, icon: MapIcon },
+  { label: "Audience & places", href: `/${slug}/audience`, icon: UsersIcon },
   { label: "Plays", href: `/${slug}/plays`, icon: SparklesIcon },
   { label: "Ad check", href: `/${slug}/ad-check`, icon: ScanSearchIcon },
   { label: "Ask X-Ray", href: `/${slug}/ask`, icon: MessageSquareIcon, shortcut: "⌘J" },

@@ -15,6 +15,8 @@ import lakes from "../../public/images/panel-lakes.jpg";
 import mic from "../../public/images/panel-mic.jpg";
 import misty from "../../public/images/panel-misty.jpg";
 import type { Territory } from "@/components/app/parts";
+import type { AudienceData } from "@/lib/audience";
+import { sampleCities } from "@/lib/globe-data";
 import { possessive } from "@/lib/intent";
 
 export const PHOTOS = { climber, court, street, dusk, forest, hiker, host, lakes, mic, misty } satisfies Record<string, StaticImageData>;
@@ -68,32 +70,34 @@ export const FILMS: MapItem[] = [
   { id: "f7", name: "Man vs. Wild", kind: "TV", tier: "mainstream", territory: "theirs", affinity: 0.85 },
 ];
 
-export const PLACES = [
-  { name: "Moab", region: "Utah · US", note: "Strongest destination; the rival ranks it 9th", image: dusk },
-  { name: "Telluride", region: "Colorado · US", note: "Shared with the second rival, leans yours", image: misty },
-  { name: "Lake District", region: "Cumbria · UK", note: "Top UK destination in the UK map", image: lakes },
-];
-
-export const TOP_CITIES = [
-  { city: "Denver", score: 0.92 },
-  { city: "Seattle", score: 0.86 },
-  { city: "Portland", score: 0.83 },
-  { city: "New York City", score: 0.64 },
-  { city: "London", score: 0.61 },
-];
-
-export const AUDIENCE_ROWS = ["18–24", "25–34", "35–44", "45–54", "55+", "Women", "Men"] as const;
-/** Index per row for [you, rival 1, rival 2]; null means Qloo returned its fill value. */
-export const AUDIENCE_INDEX: (number | null)[][] = [
-  [0.58, 0.71, 0.66],
-  [0.74, 0.77, 0.72],
-  [0.81, 0.73, 0.69],
-  [0.79, 0.62, null],
-  [0.72, 0.41, 0.48],
-  [0.69, 0.55, 0.51],
-  [0.66, 0.74, 0.78],
-];
-export const LOW_CONFIDENCE = new Set(["4-1", "4-2"]);
+/** Who-and-where for views not connected to a map yet (the agency's client pages). Same shape as the live API. */
+export function sampleAudience(brand: string, rivals: string[]): AudienceData {
+  const rival = rivals[0] ?? "Your rival";
+  const cell = (value: number | null, lowConfidence = false) => ({ value, masked: value === null, lowConfidence });
+  const rows: [string, string, (number | null)[], boolean[]?][] = [
+    ["age:24_and_younger", "Under 25", [0.58, 0.71]],
+    ["age:25_to_29", "25–29", [0.74, 0.77]],
+    ["age:30_to_34", "30–34", [0.81, 0.73]],
+    ["age:35_to_44", "35–44", [0.79, 0.62]],
+    ["age:45_to_54", "45–54", [0.72, null]],
+    ["age:55_and_older", "55 and over", [0.84, 0.61], [false, true]],
+    ["gender:female", "Women", [0.69, 0.55]],
+    ["gender:male", "Men", [0.66, 0.74]],
+  ];
+  return {
+    id: "sample",
+    market: "US",
+    builtAt: null,
+    queryCount: 32,
+    hasAudience: true,
+    sides: [
+      { key: "you", name: brand, readThrough: false },
+      { key: "rival", name: rival, readThrough: false },
+    ],
+    segments: rows.map(([key, label, [you, them], low]) => ({ key, label, cells: { you: cell(you ?? null, low?.[0]), rival: cell(them ?? null, low?.[1]) } })),
+    places: sampleCities(rival).map((c) => ({ id: c.id, name: c.name, detail: c.region, lat: c.lat, lon: c.lng, label: c.territory === "yours" ? "YOURS" : c.territory === "contested" ? "CONTESTED" : "THEIRS", rival: c.rival, ranks: c.ranks })),
+  };
+}
 
 export const PLAYS = [
   {

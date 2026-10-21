@@ -4,12 +4,13 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { HandIcon, LocateFixedIcon, XIcon } from "lucide-react";
 import { useTheme } from "next-themes";
-import { LeanBar, Panel, TerritoryGlyph } from "@/components/app/parts";
+import { Panel, TerritoryGlyph } from "@/components/app/parts";
+import { rankWords, shortRank } from "@/lib/audience";
 import { possessive } from "@/lib/intent";
 import { Segmented } from "@/components/forms/fields";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { GLOBE_CITIES, territoryOf, type GlobeCity } from "@/lib/globe-data";
+import type { GlobeCity } from "@/lib/globe-data";
 import { cn } from "@/lib/utils";
 
 // WebGL needs the browser; the canvas loads only on the client.
@@ -23,7 +24,8 @@ const GlobeCanvas = dynamic(() => import("./globe-canvas"), {
   ),
 });
 
-const TERRITORY_WORD = { yours: "Yours", contested: "Contested", theirs: "Theirs" } as const;
+/** "Only yours", "Shared with Ben & Jerry's", "Only Häagen-Dazs". */
+const standing = (city: GlobeCity) => (city.territory === "yours" ? "Only yours" : city.territory === "contested" ? `Shared with ${city.rival ?? "a rival"}` : `Only ${city.rival ?? "your rivals"}`);
 
 function useReducedMotion() {
   return useSyncExternalStore(
@@ -62,15 +64,18 @@ function useSize<T extends HTMLElement>() {
  * Where a brand's culture lives, on a globe you can turn, zoom and click.
  * Every city on the globe is also in the list beside it, for keyboards and screen readers.
  */
-export function AudienceGlobe({ brand, rival }: { brand: string; rival: string }) {
+type Side = { key: string; name: string };
+
+export function AudienceGlobe({ cities, sides, start, spread = 1.1 }: { cities: GlobeCity[]; sides: Side[]; start: { lat: number; lng: number; altitude: number }; spread?: number }) {
   const { resolvedTheme } = useTheme();
   const reduceMotion = useReducedMotion();
   const [box, size] = useSize<HTMLDivElement>();
-  const [side, setSide] = useState<"brand" | "rival">("brand");
+  const [side, setSide] = useState(sides[0]?.key ?? "you");
   const [selected, setSelected] = useState<GlobeCity | null>(null);
   const [resetKey, setResetKey] = useState(0);
-  const ranked = useMemo(() => [...GLOBE_CITIES].sort((a, b) => b[side] - a[side]), [side]);
-  const who = side === "brand" ? brand : rival;
+  const ranked = useMemo(() => cities.filter((c) => c.ranks[side]).sort((a, b) => a.ranks[side]! - b.ranks[side]!), [cities, side]);
+  const who = sides.find((s) => s.key === side)?.name ?? "";
+  const current = sides.find((s) => s.key === side) ?? sides[0]!;
 
   return (
     <Panel
@@ -81,10 +86,7 @@ export function AudienceGlobe({ brand, rival }: { brand: string; rival: string }
             label="Whose culture"
             value={side}
             onChange={setSide}
-            options={[
-              { value: "brand", label: brand },
-              { value: "rival", label: rival },
-            ]}
+            options={sides.slice(0, 3).map((s) => ({ value: s.key, label: s.name }))}
             className="[&_button]:h-7 [&_button]:px-3 [&_button]:text-[12.5px]"
           />
         </span>
@@ -98,7 +100,11 @@ export function AudienceGlobe({ brand, rival }: { brand: string; rival: string }
                 width={size.width}
                 height={size.height}
                 dark={resolvedTheme === "dark"}
+                cities={cities}
                 side={side}
+                start={start}
+                spread={spread}
+                describe={(city) => rankWords(city, current)}
                 selected={selected}
                 reduceMotion={reduceMotion}
                 onSelect={setSelected}
@@ -127,11 +133,11 @@ export function AudienceGlobe({ brand, rival }: { brand: string; rival: string }
           </div>
 
           <div className="pointer-events-none absolute bottom-4 left-4 w-52 rounded-[12px] border bg-card/85 px-3 py-2.5 backdrop-blur">
-            <p className="text-[11.5px] text-muted-foreground">{possessive(who)} culture, by place</p>
+            <p className="text-[11.5px] text-muted-foreground">Where {possessive(who)} customers go</p>
             <div className="mt-2 h-1.5 rounded-full" style={{ background: "linear-gradient(90deg, #ffd6ba, #ff8c46, #ff6719, #d64208)" }} aria-hidden />
             <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
-              <span>Weaker</span>
-              <span>Stronger</span>
+              <span>Lower on their list</span>
+              <span>Top picks</span>
             </div>
           </div>
 
@@ -146,39 +152,25 @@ export function AudienceGlobe({ brand, rival }: { brand: string; rival: string }
                   <XIcon />
                 </Button>
               </div>
-              <p className="mt-3 flex items-center gap-1.5 text-[13px]">
-                <TerritoryGlyph kind={territoryOf(selected)} decorative />
-                {TERRITORY_WORD[territoryOf(selected)]}
-                <span className="text-muted-foreground">· {selected.note}</span>
+              <p className="mt-3 flex items-center gap-1.5 text-[13px] font-medium">
+                <TerritoryGlyph kind={selected.territory} decorative />
+                {standing(selected)}
               </p>
-              <dl className="mt-3 space-y-2 text-[13px]">
-                {(
-                  [
-                    [brand, selected.brand],
-                    [rival, selected.rival],
-                  ] as const
-                ).map(([name, score]) => (
-                  <div key={name} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1">
-                    <dt className="truncate text-muted-foreground">{name}</dt>
-                    <dd className="font-mono text-[12.5px] tabular-nums">{score.toFixed(2)}</dd>
-                    <span className="col-span-2 h-1.5 rounded-full bg-soft">
-                      <span className={cn("block h-full rounded-full", name === brand ? "bg-ember" : "bg-foreground/70")} style={{ width: `${score * 100}%` }} />
-                    </span>
-                  </div>
+              <ul className="mt-2.5 space-y-1.5 text-[13px]">
+                {sides.map((s) => (
+                  <li key={s.key} className="flex items-center gap-2">
+                    <span className={cn("size-1.5 shrink-0 rounded-full", s.key === "you" ? "bg-ember" : "bg-foreground/60")} aria-hidden />
+                    <span className={selected.ranks[s.key] ? "" : "text-muted-foreground"}>{rankWords(selected, s)}</span>
+                  </li>
                 ))}
-              </dl>
-              <div className="mt-3 flex items-center gap-2 text-[12px] text-muted-foreground">
-                Lean
-                <LeanBar left={Math.round((selected.brand / (selected.brand + selected.rival)) * 100)} />
-                <span className="tabular-nums">{Math.round((selected.brand / (selected.brand + selected.rival)) * 100)} / {100 - Math.round((selected.brand / (selected.brand + selected.rival)) * 100)}</span>
-              </div>
+              </ul>
             </section>
           )}
         </div>
 
         <div className="max-h-[420px] overflow-y-auto md:max-h-[520px]">
           <p className="sticky top-0 z-10 border-b bg-card px-5 py-2.5 text-[11.5px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
-            Cities by {possessive(who)} index
+            {possessive(who)} top places
           </p>
           <ul className="divide-y divide-soft">
             {ranked.map((city) => (
@@ -194,12 +186,12 @@ export function AudienceGlobe({ brand, rival }: { brand: string; rival: string }
                 >
                   <span className="min-w-0">
                     <span className="flex items-center gap-2 text-[14px] font-medium">
-                      <TerritoryGlyph kind={territoryOf(city)} />
+                      <TerritoryGlyph kind={city.territory} />
                       <span className="truncate">{city.name}</span>
                     </span>
-                    <span className="block truncate pl-[18px] text-[12px] text-muted-foreground">{city.region}</span>
+                    <span className="block truncate pl-[18px] text-[12px] text-muted-foreground">{[city.region, standing(city)].filter(Boolean).join(" · ")}</span>
                   </span>
-                  <span className="font-mono text-[12.5px] tabular-nums">{city[side].toFixed(2)}</span>
+                  <span className="text-[12.5px] text-muted-foreground">{shortRank(city, side)}</span>
                 </button>
               </li>
             ))}

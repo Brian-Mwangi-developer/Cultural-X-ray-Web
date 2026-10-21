@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRightIcon } from "lucide-react";
@@ -10,7 +11,8 @@ import { maps } from "@/lib/maps";
 import { reportError } from "@/lib/report";
 
 /** Starts a build in the background, then re-renders the page, which now shows its progress. */
-export function BuildMapButton({ orgId, label = "Build my map" }: { orgId: string; label?: string }) {
+/** `then`: where to go once it's started (home shows the progress); without it, this page re-renders. */
+export function BuildMapButton({ orgId, label = "Build my map", rebuild = false, then }: { orgId: string; label?: string; rebuild?: boolean; then?: Route }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,8 +21,9 @@ export function BuildMapButton({ orgId, label = "Build my map" }: { orgId: strin
     setPending(true);
     setError(null);
     try {
-      await maps.build(orgId);
-      router.refresh();
+      await maps.build(orgId, rebuild);
+      if (then) router.push(then);
+      else router.refresh();
     } catch (e) {
       if (!(e instanceof AppError && e.expected)) reportError(e, { where: "map.build" });
       setError(userMessage(e));

@@ -7,7 +7,7 @@ import { polygonToCells } from "h3-js";
 import { feature } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import countries from "world-atlas/countries-110m.json";
-import { GLOBE_CITIES, heatPoints, type GlobeCity, type HeatPoint } from "@/lib/globe-data";
+import { heatPoints, type GlobeCity, type HeatPoint } from "@/lib/globe-data";
 
 const topology = countries as unknown as Topology<{ countries: GeometryCollection }>;
 /**
@@ -57,7 +57,15 @@ export type GlobeCanvasProps = {
   width: number;
   height: number;
   dark: boolean;
-  side: "brand" | "rival";
+  cities: GlobeCity[];
+  /** Whose places are shaded: a side key ("you" or a rival's). */
+  side: string;
+  /** Where the globe starts looking; altitude zooms in for one country. */
+  start: { lat: number; lng: number; altitude: number };
+  /** Heat spread in degrees: tighter for towns in one country, wider for a world view. */
+  spread: number;
+  /** Plain words for the hover label, e.g. "Top pick for Jude's". */
+  describe: (city: GlobeCity) => string;
   selected: GlobeCity | null;
   reduceMotion: boolean;
   onSelect: (city: GlobeCity) => void;
@@ -65,27 +73,25 @@ export type GlobeCanvasProps = {
   resetKey: number;
 };
 
-const START = { lat: 38, lng: -60, altitude: 1.85 };
-
-/** The nearest sample city to a point, if one is close enough to mean "this place". */
-function nearestCity(lat: number, lng: number) {
+/** The nearest city to a point, if one is close enough to mean "this place". */
+function nearestCity(cities: GlobeCity[], lat: number, lng: number, within: number) {
   let best: GlobeCity | null = null;
   let bestDistance = Infinity;
-  for (const city of GLOBE_CITIES) {
+  for (const city of cities) {
     const d = (city.lat - lat) ** 2 + ((city.lng - lng) * Math.cos((lat * Math.PI) / 180)) ** 2;
     if (d < bestDistance) {
       bestDistance = d;
       best = city;
     }
   }
-  return bestDistance < 64 ? best : null;
+  return bestDistance < within ? best : null;
 }
 
 /**
  * The WebGL globe. Heat is drawn as hexagon columns binned on the CPU, so it renders
  * the same on every machine and never depends on WebGPU being available.
  */
-export default function GlobeCanvas({ width, height, dark, side, selected, reduceMotion, onSelect, resetKey }: GlobeCanvasProps) {
+export default function GlobeCanvas({ width, height, dark, cities, side, start, spread, describe, selected, reduceMotion, onSelect, resetKey }: GlobeCanvasProps) {
   const ref = useRef<GlobeMethods | undefined>(undefined);
   const [ready, setReady] = useState(false);
   const colours = dark ? PALETTE.dark : PALETTE.light;
@@ -96,7 +102,7 @@ export default function GlobeCanvas({ width, height, dark, side, selected, reduc
   );
   useEffect(() => () => material.dispose(), [material]);
 
-  const heat = useMemo(() => heatPoints(side), [side]);
+  const heat = useMemo(() => heatPoints(cities, side, spread), [cities, side, spread]);
 
   // Slow spin until someone picks a place; never when reduced motion is on.
   useEffect(() => {
@@ -112,20 +118,22 @@ export default function GlobeCanvas({ width, height, dark, side, selected, reduc
 
   useEffect(() => {
     if (!ready) return;
-    ref.current?.pointOfView(START, reduceMotion ? 0 : 900);
-  }, [ready, resetKey, reduceMotion]);
+    ref.current?.pointOfView(start, reduceMotion ? 0 : 900);
+  }, [ready, resetKey, reduceMotion, start]);
 
   useEffect(() => {
     if (!ready || !selected) return;
-    ref.current?.pointOfView({ lat: selected.lat, lng: selected.lng, altitude: 1.35 }, reduceMotion ? 0 : 1000);
-  }, [ready, selected, reduceMotion]);
+    ref.current?.pointOfView({ lat: selected.lat, lng: selected.lng, altitude: Math.min(1.35, start.altitude * 0.8) }, reduceMotion ? 0 : 1000);
+  }, [ready, selected, reduceMotion, start.altitude]);
 
-  const tooltip = (name: string, score: string) =>
-    `<div style="font:500 12.5px Inter,system-ui,sans-serif;padding:6px 10px;border-radius:10px;background:${dark ? "#161618" : "#ffffff"};color:${dark ? "#fafafa" : "#111113"};border:1px solid ${dark ? "#27272a" : "#e4e4e7"};box-shadow:0 4px 16px rgba(0,0,0,.12)">${name} <span style="color:#a1a1aa;font-family:ui-monospace,monospace">${score}</span></div>`;
+  // Names come from Qloo and the label is HTML, so escape them.
+  const escape = (text: string) => text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
+  const tooltip = (name: string, words: string) =>
+    `<div style="font:500 12.5px Inter,system-ui,sans-serif;padding:6px 10px;border-radius:10px;background:${dark ? "#161618" : "#ffffff"};color:${dark ? "#fafafa" : "#111113"};border:1px solid ${dark ? "#27272a" : "#e4e4e7"};box-shadow:0 4px 16px rgba(0,0,0,.12)">${escape(name)} <span style="color:#a1a1aa">· ${escape(words)}</span></div>`;
 
   const cityOfHex = (d: HexBin) => {
     const first = d.points[0];
-    return first ? nearestCity(first.lat, first.lng) : null;
+    return first ? nearestCity(cities, first.lat, first.lng, (spread * 6) ** 2) : null;
   };
 
   return (
@@ -148,7 +156,7 @@ export default function GlobeCanvas({ width, height, dark, side, selected, reduc
       hexBinPointLat="lat"
       hexBinPointLng="lng"
       hexBinPointWeight="weight"
-      hexBinResolution={3}
+      hexBinResolution={spread < 0.5 ? 4 : 3}
       hexMargin={0.22}
       hexBinMerge={false}
       hexAltitude={(d) => Math.min(0.16, 0.006 + (d as HexBin).sumWeight * 0.011)}
@@ -157,7 +165,7 @@ export default function GlobeCanvas({ width, height, dark, side, selected, reduc
       hexTransitionDuration={reduceMotion ? 0 : 700}
       hexLabel={(d) => {
         const city = cityOfHex(d as HexBin);
-        return city ? tooltip(city.name, city[side].toFixed(2)) : "";
+        return city ? tooltip(city.name, describe(city)) : "";
       }}
       onHexClick={(d) => {
         const city = cityOfHex(d as HexBin);

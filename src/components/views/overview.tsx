@@ -200,10 +200,11 @@ export function OwnerOverview({ slug, orgId, brand, map, market, canBuild }: { s
   );
 }
 
-function NoMapYet({ orgId, brand, canBuild }: { orgId: string; brand: string; canBuild: boolean }) {
+/** Shown wherever a page needs a map that hasn't been built yet. */
+export function NoMapYet({ orgId, brand, canBuild, crumb = "Overview" }: { orgId: string; brand: string; canBuild: boolean; crumb?: string }) {
   return (
     <>
-      <TopBar crumbs={[{ label: "Overview" }]} />
+      <TopBar crumbs={[{ label: crumb }]} />
       <PageBody>
         <section className="max-w-xl space-y-5 rounded-[14px] border bg-card p-6">
           <p className="text-[11.5px] font-medium tracking-[0.12em] text-muted-foreground uppercase">No map yet</p>

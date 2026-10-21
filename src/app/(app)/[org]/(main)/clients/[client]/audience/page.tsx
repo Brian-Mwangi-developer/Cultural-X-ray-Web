@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { PageSkeleton } from "@/components/shell/page-skeleton";
 import { AudienceView } from "@/components/views/audience";
 import { clientPage } from "@/lib/page-context";
+import { sampleAudience } from "@/lib/sample-data";
 export const metadata: Metadata = { title: "Audience & places" };
 
 export default function Page({ params }: PageProps<"/[org]/clients/[client]/audience">) {
@@ -15,5 +16,7 @@ export default function Page({ params }: PageProps<"/[org]/clients/[client]/audi
 
 async function Content({ params }: { params: PageProps<"/[org]/clients/[client]/audience">["params"] }) {
   const ctx = await clientPage(params);
-  return <AudienceView crumbs={ctx.crumbs("Audience & places")} brand={ctx.client.workspace.name} rivals={ctx.client.workspace.rivals} market={ctx.client.workspace.markets[0] === "GB" ? "UK" : "US"} />;
+  // Agencies can't read a client's map yet (backend Architecture.md §12), so this stays sample data.
+  const brand = ctx.client.workspace.name;
+  return <AudienceView crumbs={ctx.crumbs("Audience & places")} brand={brand} data={sampleAudience(brand, ctx.client.workspace.rivals)} sample />;
 }

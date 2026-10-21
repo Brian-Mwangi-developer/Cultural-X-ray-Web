@@ -1,22 +1,16 @@
 /**
- * Sample geography for the audience globe: where a brand's culture concentrates,
- * and where its rival's does. Shaped like the engine's future city-affinity output.
+ * Geography for the audience globe: where each side's customers go, and sample places
+ * for views that aren't connected to a map yet.
  */
 import type { Territory } from "@/components/app/parts";
 
-export type GlobeCity = {
-  id: string;
-  name: string;
-  region: string;
-  lat: number;
-  lng: number;
-  /** Affinity index for the brand and its first rival, 0–1. */
-  brand: number;
-  rival: number;
-  note: string;
-};
+/** Sample shape: one score per side. Only the agency's sample view uses it now. */
+type SampleCity = { id: string; name: string; region: string; lat: number; lng: number; brand: number; rival: number; note: string };
 
-export const GLOBE_CITIES: GlobeCity[] = [
+/** A place on the globe. `ranks` maps a side's key to its rank there (1 = top); missing = not in its list. */
+export type GlobeCity = { id: string; name: string; region: string; lat: number; lng: number; territory: Territory; rival: string | null; ranks: Record<string, number> };
+
+const SAMPLE_CITIES: SampleCity[] = [
   { id: "moab", name: "Moab", region: "Utah · US", lat: 38.57, lng: -109.55, brand: 0.95, rival: 0.42, note: "Strongest destination; climbing and slow trips" },
   { id: "denver", name: "Denver", region: "Colorado · US", lat: 39.74, lng: -104.99, brand: 0.92, rival: 0.61, note: "Top city for wellbeing podcasts" },
   { id: "seattle", name: "Seattle", region: "Washington · US", lat: 47.61, lng: -122.33, brand: 0.86, rival: 0.58, note: "Conservation films over-index here" },
@@ -41,10 +35,28 @@ export const GLOBE_CITIES: GlobeCity[] = [
   { id: "nairobi", name: "Nairobi", region: "Kenya", lat: -1.29, lng: 36.82, brand: 0.28, rival: 0.22, note: "Thin coverage in Qloo; not offered yet" },
 ];
 
-export const territoryOf = (city: GlobeCity): Territory => {
-  const diff = city.brand - city.rival;
-  return diff > 0.08 ? "yours" : diff < -0.08 ? "theirs" : "contested";
+/** The sample cities in the live shape, ranked per side, for pages that aren't connected yet. */
+export function sampleCities(rival: string): GlobeCity[] {
+  const rankBy = (side: "brand" | "rival") => new Map([...SAMPLE_CITIES].sort((a, b) => b[side] - a[side]).map((c, i) => [c.id, i + 1]));
+  const you = rankBy("brand");
+  const them = rankBy("rival");
+  return SAMPLE_CITIES.map((c) => {
+    const diff = c.brand - c.rival;
+    return { id: c.id, name: c.name, region: c.region, lat: c.lat, lng: c.lng, territory: diff > 0.08 ? "yours" : diff < -0.08 ? "theirs" : "contested", rival: diff > 0.08 ? null : rival, ranks: { you: you.get(c.id)!, rival: them.get(c.id)! } };
+  });
+}
+
+/** How much a side's culture concentrates here, 0–1, from its rank. Only shades the globe. */
+export const weightOf = (city: GlobeCity, side: string, total = 20) => {
+  const rank = city.ranks[side];
+  return rank ? Math.max(0, 1 - (rank - 1) / total) : 0;
 };
+
+/** The middle of a set of places, to start the globe looking at them. */
+export function centreOf(cities: GlobeCity[]) {
+  if (!cities.length) return { lat: 38, lng: -60 };
+  return { lat: cities.reduce((a, c) => a + c.lat, 0) / cities.length, lng: cities.reduce((a, c) => a + c.lng, 0) / cities.length };
+}
 
 export type HeatPoint = { lat: number; lng: number; weight: number };
 
@@ -57,18 +69,19 @@ function seeded(seed: number) {
   };
 }
 
-/** Spreads each city into a soft cluster; strong cities get dense, heavy clusters. */
-export function heatPoints(side: "brand" | "rival"): HeatPoint[] {
-  const random = seeded(side === "brand" ? 7 : 13);
+/** Spreads each city into a soft cluster; strong cities get dense, heavy clusters. `spread` is in degrees. */
+export function heatPoints(cities: GlobeCity[], side: string, spread = 1.1): HeatPoint[] {
+  const random = seeded(side === "you" ? 7 : 13);
   const points: HeatPoint[] = [];
-  for (const city of GLOBE_CITIES) {
-    const score = city[side];
+  for (const city of cities) {
+    const score = weightOf(city, side);
+    if (!score) continue;
     const count = Math.round(8 + score * 40);
     for (let i = 0; i < count; i++) {
-      // Box–Muller for a gaussian spread of roughly 1.1°.
+      // Box–Muller for a gaussian spread of about `spread` degrees.
       const u = Math.max(random(), 1e-6);
       const v = random();
-      const r = Math.sqrt(-2 * Math.log(u)) * 1.1;
+      const r = Math.sqrt(-2 * Math.log(u)) * spread;
       points.push({ lat: city.lat + r * Math.cos(2 * Math.PI * v), lng: city.lng + r * Math.sin(2 * Math.PI * v) * 1.3, weight: score ** 3 });
     }
   }
