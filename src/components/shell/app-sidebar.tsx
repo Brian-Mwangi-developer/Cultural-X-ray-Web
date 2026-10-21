@@ -23,7 +23,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { readIntent } from "@/lib/intent";
+import { readIntent, rivalNames, seedNames } from "@/lib/intent";
 import { isManager } from "@/lib/roles";
 import type { ClientSummary, Membership, OrgContext, Preferences } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -109,7 +109,7 @@ export function AppSidebar({ user, org, memberships, clients }: { user: ShellUse
               <SidebarGroupLabel className={labelClass}>Compared with</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
-                  {[...(intent.seeds ?? []).map((b) => ({ b, role: "seed" })), ...(intent.rivals ?? []).map((b) => ({ b, role: "rival" }))].map(({ b, role }) => (
+                  {[...seedNames(intent).map((b) => ({ b, role: "seed" })), ...rivalNames(intent).map((b) => ({ b, role: "rival" }))].map(({ b, role }) => (
                     <SidebarMenuItem key={`${role}-${b}`}>
                       <SidebarMenuButton render={<Link href={`/${o.slug}/map`} />} className={itemClass}>
                         <BrandMark name={b} size="xs" tone="neutral" />

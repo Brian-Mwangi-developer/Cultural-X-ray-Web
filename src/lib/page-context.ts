@@ -1,6 +1,6 @@
 import "server-only";
 import { notFound } from "next/navigation";
-import { readIntent, marketName } from "@/lib/intent";
+import { marketName, readIntent, rivalNames, seedNames } from "@/lib/intent";
 import { agencyClients, requireOrg, requireUser, type OrgKind } from "@/lib/session";
 
 type Params = Promise<{ org: string }>;
@@ -16,8 +16,8 @@ export async function orgPage(params: Params, kind?: OrgKind) {
     org,
     slug,
     brand: org.organization.name,
-    seeds: intent.seeds ?? [],
-    rivals: intent.rivals ?? [],
+    seeds: seedNames(intent),
+    rivals: rivalNames(intent),
     market: marketName(org.organization.markets[0]),
     marketCode: org.organization.markets[0] ?? "US",
   };
