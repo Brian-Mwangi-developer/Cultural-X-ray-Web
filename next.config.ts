@@ -5,6 +5,8 @@ const backendUrl = (process.env.BACKEND_URL ?? "http://localhost:4000").replace(
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  // Posters and artwork for Culture Map items come from Qloo.
+  images: { remotePatterns: [{ protocol: "https", hostname: "images.qloo.com", pathname: "/i/**" }] },
   turbopack: {
     rules: {
       "*.css": {

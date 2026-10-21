@@ -16,6 +16,7 @@ import { authClient } from "@/lib/auth-client";
 import { AppError, userMessage } from "@/lib/errors";
 import { type BrandIntent, type Pick, possessive, readIntent } from "@/lib/intent";
 import { type Card, type Category, type Locality, lookup, type Market, marketsLabel, newPick, readWebsite, type Suggestion, toPick } from "@/lib/lookup";
+import { maps } from "@/lib/maps";
 import { reportError } from "@/lib/report";
 import type { OrgContext } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -696,6 +697,22 @@ function ReviewStep({ org, intent }: { org: OrgContext; intent: BrandIntent }) {
   const seeds = intent.seeds ?? [];
   const rivals = intent.rivals ?? [];
   const inQloo = [...seeds, ...rivals].filter((p) => p.kind !== "new").length + (brand.kind !== "new" ? 1 : 0);
+  const sides = 1 + rivals.filter((p) => p.kind !== "new").length;
+  const [pending, setPending] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  async function build() {
+    setPending(true);
+    setFormError(null);
+    try {
+      await maps.build(org.organization.id);
+      // The build runs on our servers; the overview shows its progress and survives leaving.
+      router.push(`/${org.organization.slug}`);
+    } catch (error) {
+      fail(error, "onboarding.brand.build", setFormError);
+      setPending(false);
+    }
+  }
 
   return (
     <SplitShell
@@ -725,15 +742,17 @@ function ReviewStep({ org, intent }: { org: OrgContext; intent: BrandIntent }) {
           <SparklesIcon className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} aria-hidden />
           {inQloo} {inQloo === 1 ? "brand is" : "brands are"} in Qloo, so none will be dropped from your map.
         </p>
+        {formError && <Alert>{formError}</Alert>}
         <div className="space-y-3">
-          <Button size="cta" className="w-full" onClick={() => router.push(`/${org.organization.slug}?building=1`)}>
+          <Button size="cta" className="w-full" onClick={build} disabled={pending}>
+            {pending && <Spinner className="size-4" />}
             Build my map
-            <ArrowRightIcon data-icon="inline-end" />
+            {!pending && <ArrowRightIcon data-icon="inline-end" />}
           </Button>
           <Button variant="ghost" size="pill" className="mx-auto flex" onClick={() => router.push(`/onboarding?kind=brand&step=2&org=${encodeURIComponent(org.organization.slug)}`)}>
             Change something
           </Button>
-          <p className="text-center text-[13px] text-muted-foreground">About a minute. Uses roughly 200 Qloo queries, then it&rsquo;s cached.</p>
+          <p className="text-center text-[13px] text-muted-foreground">About a minute, using {sides * 8} Qloo queries. You can leave while it builds.</p>
         </div>
       </div>
     </SplitShell>

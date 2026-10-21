@@ -30,9 +30,10 @@ export const rivalNames = (intent: BrandIntent) => (intent.rivals ?? []).map((p)
 
 export const marketName = (code: string | undefined) => (code === "GB" ? "UK" : "US");
 
-/** "Dunkin'" → "Dunkin's", "Patagonia" → "Patagonia's", "Adidas" → "Adidas'". */
+/** "Dunkin'" → "Dunkin's", "Patagonia" → "Patagonia's", "Adidas" → "Adidas'", "Ben & Jerry's" stays as it is. */
 export function possessive(name: string) {
   const trimmed = name.trim();
+  if (/['’]s$/i.test(trimmed)) return trimmed;
   if (/['’]$/.test(trimmed)) return `${trimmed}s`;
   if (/s$/i.test(trimmed)) return `${trimmed}’`;
   return `${trimmed}’s`;
