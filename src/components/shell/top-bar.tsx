@@ -7,12 +7,12 @@ export type Crumb = { label: string; href?: string };
 
 /**
  * The 52px bar above every page: where you are, and the page's actions.
- * Below laptop width it also carries the button that opens the sidebar.
+ * It also carries the sidebar toggle: a sheet below laptop width, collapse and expand above it.
  */
 export function TopBar({ crumbs, actions, className }: { crumbs: Crumb[]; actions?: React.ReactNode; className?: string }) {
   return (
     <header className={cn("sticky top-0 z-20 flex h-[52px] shrink-0 items-center gap-3 border-b bg-background/90 px-4 backdrop-blur-md lg:px-7", className)}>
-      <SidebarTrigger className="-ml-1 lg:hidden" />
+      <SidebarTrigger className="-ml-1" />
       <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
         <ol className="flex min-w-0 items-center gap-2 text-[13.5px]">
           {crumbs.map((c, i) => {

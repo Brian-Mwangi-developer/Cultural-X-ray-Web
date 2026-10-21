@@ -13,13 +13,13 @@ const itemClass =
   "h-9 gap-2.5 rounded-[10px] px-2.5 text-[14px] text-foreground/85 [&_svg]:size-[17px] [&_svg]:text-foreground/70 data-active:bg-card data-active:font-medium data-active:text-foreground data-active:shadow-[0_0_0_1px_var(--border)] data-active:[&_svg]:text-ember";
 
 /** c4: settings replace the workspace sidebar, with a clear way back. */
-export function SettingsShell({ org, preferences, children }: { org: OrgContext; preferences: Preferences; children: React.ReactNode }) {
+export function SettingsShell({ org, preferences, sidebarOpen, children }: { org: OrgContext; preferences: Preferences; sidebarOpen: boolean; children: React.ReactNode }) {
   const pathname = usePathname();
   const o = org.organization;
   const groups = settingsNav(o.slug, o.kind, { members: org.counts.members, clients: org.counts.clients, agencies: org.counts.agencies + org.counts.pendingRequests });
 
   return (
-    <SidebarProvider style={{ "--sidebar-width": "16.5rem" } as React.CSSProperties}>
+    <SidebarProvider defaultOpen={sidebarOpen} style={{ "--sidebar-width": "16.5rem" } as React.CSSProperties}>
       <PreferencesSync preferences={preferences} />
       <Sidebar className="border-r-0">
         <SidebarHeader className="px-3 pt-4 pb-2">

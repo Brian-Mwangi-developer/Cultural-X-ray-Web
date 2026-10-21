@@ -13,12 +13,15 @@ export function MainShell({
   org,
   memberships,
   clients,
+  sidebarOpen,
   children,
 }: {
   user: ShellUser;
   org: OrgContext;
   memberships: Membership[];
   clients: ClientSummary[];
+  /** Last open or collapsed state, from the sidebar's cookie. */
+  sidebarOpen: boolean;
   children: React.ReactNode;
 }) {
   const o = org.organization;
@@ -34,7 +37,7 @@ export function MainShell({
   return (
     <CommandMenu links={links}>
       <PreferencesSync preferences={user.preferences} />
-      <SidebarProvider style={{ "--sidebar-width": "16.5rem" } as React.CSSProperties}>
+      <SidebarProvider defaultOpen={sidebarOpen} style={{ "--sidebar-width": "16.5rem" } as React.CSSProperties}>
         <AppSidebar user={user} org={org} memberships={memberships} clients={clients} />
         <SidebarInset className="min-w-0 border-l bg-background">{children}</SidebarInset>
       </SidebarProvider>
