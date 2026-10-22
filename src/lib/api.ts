@@ -10,6 +10,8 @@ let expectedUser: string | null = null;
 export const setExpectedUser = (id: string | null) => {
   expectedUser = id;
 };
+/** Headers every call to our API carries (used by transports that don't go through `api`). */
+export const userHeaders = (): Record<string, string> => (expectedUser ? { "x-xray-user": expectedUser } : {});
 
 /**
  * Browser calls to the backend's /api/v1, proxied through this origin so the session

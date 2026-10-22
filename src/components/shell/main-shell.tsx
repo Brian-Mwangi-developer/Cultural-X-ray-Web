@@ -1,7 +1,9 @@
 "use client";
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AskLauncher } from "@/components/ask/ask-launcher";
 import { SessionGuard } from "@/components/auth/session-guard";
+import { FeedbackTab } from "@/components/feedback/feedback-tab";
 import { PreferencesSync } from "@/lib/preferences";
 import type { ClientSummary, Membership, OrgContext } from "@/lib/session";
 import { AppSidebar, type ShellUser } from "./app-sidebar";
@@ -43,6 +45,9 @@ export function MainShell({
         <AppSidebar user={user} org={org} memberships={memberships} clients={clients} />
         <SidebarInset className="min-w-0 border-l bg-background">{children}</SidebarInset>
       </SidebarProvider>
+      {/* Agencies ask across clients once they can read client maps. */}
+      {o.kind === "WORKSPACE" && <AskLauncher orgId={o.id} slug={o.slug} brand={o.name} />}
+      <FeedbackTab email={user.email} />
     </CommandMenu>
   );
 }
