@@ -71,6 +71,8 @@ export type GlobeCanvasProps = {
   onSelect: (city: GlobeCity) => void;
   /** Bumped by the parent to fly back to the starting view. */
   resetKey: number;
+  /** Called once the globe has drawn, so the parent can lift its loading state. */
+  onReady?: () => void;
 };
 
 /** The nearest city to a point, if one is close enough to mean "this place". */
@@ -91,9 +93,18 @@ function nearestCity(cities: GlobeCity[], lat: number, lng: number, within: numb
  * The WebGL globe. Heat is drawn as hexagon columns binned on the CPU, so it renders
  * the same on every machine and never depends on WebGPU being available.
  */
-export default function GlobeCanvas({ width, height, dark, cities, side, start, spread, describe, selected, reduceMotion, onSelect, resetKey }: GlobeCanvasProps) {
+export default function GlobeCanvas({ width, height, dark, cities, side, start, spread, describe, selected, reduceMotion, onSelect, resetKey, onReady }: GlobeCanvasProps) {
   const ref = useRef<GlobeMethods | undefined>(undefined);
   const [ready, setReady] = useState(false);
+  // The globe can call back after React has thrown this instance away (Strict Mode mounts twice),
+  // so its callbacks only land while this instance is live.
+  const live = useRef(false);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
   const colours = dark ? PALETTE.dark : PALETTE.light;
 
   const material = useMemo(
@@ -146,7 +157,12 @@ export default function GlobeCanvas({ width, height, dark, cities, side, start, 
       showAtmosphere
       atmosphereColor="#ff6719"
       atmosphereAltitude={0.14}
-      onGlobeReady={() => setReady(true)}
+      onGlobeReady={() => {
+        // The globe can report ready before React has mounted this component; defer a tick.
+        setTimeout(() => live.current && setReady(true), 0);
+        // Land and heat draw a beat after the sphere; wait for them before revealing.
+        setTimeout(() => live.current && onReady?.(), 350);
+      }}
       hexPolygonsData={LAND}
       hexPolygonResolution={3}
       hexPolygonMargin={0.62}

@@ -1,3 +1,4 @@
+import { centreOf, type GlobeCity } from "@/lib/globe-data";
 import { possessive } from "@/lib/intent";
 
 /** The Audience & places page as the backend returns it (GET /orgs/:id/maps/latest/audience). */
@@ -116,3 +117,22 @@ export const shortRank = (place: { ranks: Record<string, number> }, key: string)
   const rank = place.ranks[key];
   return rank ? (rank === 1 ? "Top pick" : ordinal(rank)) : null;
 };
+
+const TERRITORY = { YOURS: "yours", CONTESTED: "contested", THEIRS: "theirs" } as const;
+
+/**
+ * What the globe needs from the audience data: places with a location, the brands to switch
+ * between, where to start looking and how tight the heat is. One market's towns sit close
+ * together, so live maps start zoomed in on them; the sample spans the world.
+ */
+export function globeOf(data: AudienceData, sample = false) {
+  const cities = data.places.flatMap((p): GlobeCity[] =>
+    p.lat == null || p.lon == null ? [] : [{ id: p.id, name: p.name, region: p.detail ?? "", lat: p.lat, lng: p.lon, territory: TERRITORY[p.label], rival: p.rival, ranks: p.ranks }],
+  );
+  return {
+    cities,
+    sides: data.sides.map((s) => ({ key: s.key, name: s.name })),
+    start: sample ? { lat: 38, lng: -60, altitude: 1.85 } : { ...centreOf(cities), altitude: 0.8 },
+    spread: sample ? 1.1 : 0.3,
+  };
+}

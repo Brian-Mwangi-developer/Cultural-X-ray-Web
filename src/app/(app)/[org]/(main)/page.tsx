@@ -5,6 +5,7 @@ import { PageSkeleton } from "@/components/shell/page-skeleton";
 import { AgencyHome } from "@/components/views/agency-home";
 import { MapBuilding } from "@/components/views/map-building";
 import { OwnerOverview } from "@/components/views/overview";
+import type { AudienceData } from "@/lib/audience";
 import { inProgress, type CultureMap } from "@/lib/maps";
 import { orgPage } from "@/lib/page-context";
 import { agencyClients, backendGet } from "@/lib/session";
@@ -28,7 +29,13 @@ async function Home({ params }: Pick<PageProps<"/[org]">, "params">) {
     return <AgencyHome org={ctx.org} clients={clients} firstName={ctx.user.name.split(" ")[0] || ctx.user.name} today={today} />;
   }
   const orgId = ctx.org.organization.id;
-  const { map } = (await backendGet<{ map: CultureMap | null }>(`/api/v1/orgs/${orgId}/maps/latest`))!;
+  // The globe's places come with the audience read-out; both are cached once the map is ready.
+  const [latest, read] = await Promise.all([
+    backendGet<{ map: CultureMap | null }>(`/api/v1/orgs/${orgId}/maps/latest`),
+    backendGet<{ audience: AudienceData | null }>(`/api/v1/orgs/${orgId}/maps/latest/audience`),
+  ]);
+  const map = latest?.map ?? null;
+  const audience = read?.audience ?? null;
   // A build in progress (or stopped) shows its progress; the worker keeps going whether or not anyone watches.
   if (map && (inProgress(map.status) || map.status === "FAILED")) {
     const seeds = map.subjects.filter((s) => s.role === "SEED").map((s) => s.name);
@@ -37,5 +44,5 @@ async function Home({ params }: Pick<PageProps<"/[org]">, "params">) {
     return <MapBuilding orgId={orgId} initial={map} reading={reading} market={ctx.market} rivals={map.subjects.filter((s) => s.role === "RIVAL").map((s) => s.name)} />;
   }
   const canBuild = ["owner", "admin", "strategist"].includes(ctx.org.membership.role);
-  return <OwnerOverview slug={ctx.slug} orgId={orgId} brand={ctx.brand} map={map} market={ctx.market} canBuild={canBuild} />;
+  return <OwnerOverview slug={ctx.slug} orgId={orgId} brand={ctx.brand} map={map} audience={audience} market={ctx.market} canBuild={canBuild} />;
 }

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { ArrowRightIcon, CircleCheckIcon, DownloadIcon, FlagIcon, type LucideIcon, MicIcon, Share2Icon, UploadIcon, UserIcon } from "lucide-react";
 import { Evidence, TerritoryGlyph, TextLink } from "@/components/app/parts";
 import { SoonButton } from "@/components/app/soon-button";
+import { AudienceGlobe } from "@/components/globe/audience-globe";
 import { BuildMapButton } from "@/components/views/build-map-button";
+import { type AudienceData, globeOf } from "@/lib/audience";
 import { PageBody, TopBar } from "@/components/shell/top-bar";
 import { buttonVariants } from "@/components/ui/button";
 import { possessive } from "@/lib/intent";
@@ -78,12 +80,13 @@ const builtWhen = (iso: string | null) => {
 };
 
 /** o3: the owner's home, from their latest Culture Map. */
-export function OwnerOverview({ slug, orgId, brand, map, market, canBuild }: { slug: string; orgId: string; brand: string; map: CultureMap | null; market: string; canBuild: boolean }) {
+export function OwnerOverview({ slug, orgId, brand, map, audience, market, canBuild }: { slug: string; orgId: string; brand: string; map: CultureMap | null; audience: AudienceData | null; market: string; canBuild: boolean }) {
   if (!map) return <NoMapYet orgId={orgId} brand={brand} canBuild={canBuild} />;
   const seeds = map.subjects.filter((s) => s.role === "SEED").map((s) => s.name);
   const rivals = map.subjects.filter((s) => s.role === "RIVAL").map((s) => s.name);
   const readFor = map.subjects.some((s) => s.role === "SELF") ? `read for ${brand}${seeds.length ? ` with ${list(seeds)}` : ""}` : `read through ${list(seeds)}`;
   const plays = playsOf(map);
+  const globe = audience ? globeOf(audience) : null;
 
   return (
     <>
@@ -115,6 +118,9 @@ export function OwnerOverview({ slug, orgId, brand, map, market, canBuild }: { s
           </div>
           {map.thinData && <p className="mt-3 max-w-2xl text-[13.5px] text-muted-foreground">Qloo knows less about this brand than most, so some lists are short. Adding a brand your customers also buy will fill it out.</p>}
         </div>
+
+        {/* Where the culture lives comes first; Google Maps will sit beside it as another view. */}
+        {globe && globe.cities.length > 0 && <AudienceGlobe {...globe} />}
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {COLUMNS.map((col) => {

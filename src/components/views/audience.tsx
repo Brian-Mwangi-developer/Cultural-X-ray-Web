@@ -6,8 +6,7 @@ import { AudienceGlobe } from "@/components/globe/audience-globe";
 import { PageBody, TopBar, type Crumb } from "@/components/shell/top-bar";
 import { buttonVariants } from "@/components/ui/button";
 import { BuildMapButton } from "@/components/views/build-map-button";
-import { type AudienceData, type AudiencePlace, leaderOf, rankWords, readOf, shadeOf, shortRank, strengthWord } from "@/lib/audience";
-import { centreOf, type GlobeCity } from "@/lib/globe-data";
+import { type AudienceData, type AudiencePlace, globeOf, leaderOf, rankWords, readOf, shadeOf, shortRank, strengthWord } from "@/lib/audience";
 import { cn } from "@/lib/utils";
 
 const TERRITORY = { YOURS: "yours", CONTESTED: "contested", THEIRS: "theirs" } as const;
@@ -17,20 +16,13 @@ function cellStyle(shade: number) {
   return { backgroundColor: `color-mix(in oklab, var(--ember) ${Math.round(10 + shade * 70)}%, var(--card))` };
 }
 
-function toCity(p: AudiencePlace): GlobeCity | null {
-  if (p.lat == null || p.lon == null) return null;
-  return { id: p.id, name: p.name, region: p.detail ?? "", lat: p.lat, lng: p.lon, territory: TERRITORY[p.label], rival: p.rival, ranks: p.ranks };
-}
-
 /**
  * a5: who each brand reaches, and where. Everything is said in words: who's strongest with which
  * group, which places are only yours, and where a rival's customers go instead.
  */
 export function AudienceView({ crumbs, brand, data, sample, slug, orgId, canBuild }: { crumbs: Crumb[]; brand: string; data: AudienceData; sample?: boolean; slug?: string; orgId?: string; canBuild?: boolean }) {
   const you = data.sides[0]!;
-  const cities = data.places.map(toCity).filter((c): c is GlobeCity => c !== null);
-  // One market's towns sit close together: start zoomed in on them, with tighter heat.
-  const start = sample ? { lat: 38, lng: -60, altitude: 1.85 } : { ...centreOf(cities), altitude: 0.8 };
+  const globe = globeOf(data, sample);
   const yours = data.places.filter((p) => p.ranks.you && p.label !== "THEIRS").sort((a, b) => a.ranks.you! - b.ranks.you!);
   const onlyYours = yours.filter((p) => p.label === "YOURS").slice(0, 3);
   const shared = yours.filter((p) => p.label === "CONTESTED").slice(0, 2);
@@ -61,7 +53,7 @@ export function AudienceView({ crumbs, brand, data, sample, slug, orgId, canBuil
           </div>
         </section>
 
-        {cities.length > 0 && <AudienceGlobe cities={cities} sides={data.sides.map((s) => ({ key: s.key, name: s.name }))} start={start} spread={sample ? 1.1 : 0.3} />}
+        {globe.cities.length > 0 && <AudienceGlobe {...globe} />}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <Panel title="Who they are" action={<span className="rounded-full border px-2.5 py-0.5 text-[12.5px]">Market {data.market === "GB" ? "UK" : "US"}</span>}>

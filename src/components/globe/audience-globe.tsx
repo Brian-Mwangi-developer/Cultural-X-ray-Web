@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { HandIcon, LocateFixedIcon, XIcon } from "lucide-react";
+import { HandIcon, LocateFixedIcon, Maximize2Icon, XIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Panel, TerritoryGlyph } from "@/components/app/parts";
 import { rankWords, shortRank } from "@/lib/audience";
@@ -13,16 +13,30 @@ import { Spinner } from "@/components/ui/spinner";
 import type { GlobeCity } from "@/lib/globe-data";
 import { cn } from "@/lib/utils";
 
-// WebGL needs the browser; the canvas loads only on the client.
-const GlobeCanvas = dynamic(() => import("./globe-canvas"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full items-center justify-center gap-2 text-[13px] text-muted-foreground">
-      <Spinner className="size-4" />
-      Loading the globe
+const PlacesMapDialog = dynamic(() => import("./places-map-dialog").then((m) => m.PlacesMapDialog), { ssr: false });
+const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+
+// WebGL needs the browser; the canvas loads only on the client. The loading state is drawn by
+// the panel itself (GlobeLoading) and covers both the download and the first draw.
+const GlobeCanvas = dynamic(() => import("./globe-canvas"), { ssr: false, loading: () => null });
+
+/** Shown until the globe has drawn, so a blank panel never reads as broken. */
+function GlobeLoading({ slow }: { slow: boolean }) {
+  return (
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-card" role="status" aria-live="polite">
+      <div className="absolute size-[min(70%,360px)] animate-pulse rounded-full bg-gradient-to-br from-muted to-soft" aria-hidden />
+      <div className="relative flex max-w-[260px] flex-col items-center gap-2 text-center">
+        <span className="flex items-center gap-2 text-[13.5px] font-medium">
+          <Spinner className="size-4" />
+          Loading the globe
+        </span>
+        <span className="text-[12.5px] text-muted-foreground">
+          {slow ? "This is taking longer than usual. Every place is also in the list beside it." : "Drawing where customers go."}
+        </span>
+      </div>
     </div>
-  ),
-});
+  );
+}
 
 /** "Only yours", "Shared with Ben & Jerry's", "Only Häagen-Dazs". */
 const standing = (city: GlobeCity) => (city.territory === "yours" ? "Only yours" : city.territory === "contested" ? `Shared with ${city.rival ?? "a rival"}` : `Only ${city.rival ?? "your rivals"}`);
@@ -73,11 +87,22 @@ export function AudienceGlobe({ cities, sides, start, spread = 1.1 }: { cities: 
   const [side, setSide] = useState(sides[0]?.key ?? "you");
   const [selected, setSelected] = useState<GlobeCity | null>(null);
   const [resetKey, setResetKey] = useState(0);
+  const [drawn, setDrawn] = useState(false);
+  // Google Maps loads only once someone opens it, then stays mounted so reopening is instant.
+  const [mapOpen, setMapOpen] = useState(false);
+  const [mapUsed, setMapUsed] = useState(false);
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (drawn) return;
+    const timer = setTimeout(() => setSlow(true), 12_000);
+    return () => clearTimeout(timer);
+  }, [drawn]);
   const ranked = useMemo(() => cities.filter((c) => c.ranks[side]).sort((a, b) => a.ranks[side]! - b.ranks[side]!), [cities, side]);
   const who = sides.find((s) => s.key === side)?.name ?? "";
   const current = sides.find((s) => s.key === side) ?? sides[0]!;
 
   return (
+    <>
     <Panel
       title="Where the culture lives"
       action={
@@ -89,6 +114,15 @@ export function AudienceGlobe({ cities, sides, start, spread = 1.1 }: { cities: 
             options={sides.slice(0, 3).map((s) => ({ value: s.key, label: s.name }))}
             className="[&_button]:h-7 [&_button]:px-3 [&_button]:text-[12.5px]"
           />
+          {MAPS_KEY && (
+            <Button variant="outline" size="pill" className="h-8" onClick={() => {
+                setMapUsed(true);
+                setMapOpen(true);
+              }}>
+              <Maximize2Icon data-icon="inline-start" />
+              <span className="max-sm:sr-only">Open map</span>
+            </Button>
+          )}
         </span>
       }
     >
@@ -109,9 +143,11 @@ export function AudienceGlobe({ cities, sides, start, spread = 1.1 }: { cities: 
                 reduceMotion={reduceMotion}
                 onSelect={setSelected}
                 resetKey={resetKey}
+                onReady={() => setDrawn(true)}
               />
             )}
           </div>
+          {!drawn && <GlobeLoading slow={slow} />}
 
           <div className="pointer-events-none absolute inset-x-4 top-4 flex items-start justify-between gap-3">
             <p className="flex items-center gap-1.5 rounded-full border bg-card/85 px-3 py-1.5 text-[12px] text-muted-foreground backdrop-blur">
@@ -199,5 +235,7 @@ export function AudienceGlobe({ cities, sides, start, spread = 1.1 }: { cities: 
         </div>
       </div>
     </Panel>
+    {mapUsed && <PlacesMapDialog open={mapOpen} onOpenChange={setMapOpen} cities={cities} sides={sides} initialSide={side} />}
+    </>
   );
 }
