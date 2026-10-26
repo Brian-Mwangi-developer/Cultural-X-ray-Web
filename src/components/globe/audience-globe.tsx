@@ -106,13 +106,13 @@ export function AudienceGlobe({ cities, sides, start, spread = 1.1 }: { cities: 
     <Panel
       title="Where the culture lives"
       action={
-        <span className="flex items-center gap-2">
+        <span className="flex max-w-full items-center gap-2 overflow-x-auto">
           <Segmented
             label="Whose culture"
             value={side}
             onChange={setSide}
             options={sides.slice(0, 3).map((s) => ({ value: s.key, label: s.name }))}
-            className="[&_button]:h-7 [&_button]:px-3 [&_button]:text-[12.5px]"
+            className="[&_button]:h-7 [&_button]:px-3 [&_button]:text-[12.5px] [&_button]:whitespace-nowrap"
           />
           {MAPS_KEY && (
             <Button variant="outline" size="pill" className="h-8" onClick={() => {

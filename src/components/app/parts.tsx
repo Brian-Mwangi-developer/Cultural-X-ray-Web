@@ -49,8 +49,8 @@ export function Panel({
   return (
     <section className={cn("overflow-hidden rounded-[14px] border bg-card", className)}>
       {title && (
-        <header className="flex min-h-12 items-center justify-between gap-3 border-b bg-muted/60 px-[18px] py-2.5">
-          <h2 className="text-[13.5px] font-medium">{title}</h2>
+        <header className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b bg-muted/60 px-[18px] py-2.5">
+          <h2 className="shrink-0 text-[13.5px] font-medium">{title}</h2>
           {action && <div className="flex items-center gap-2 text-[13px] text-muted-foreground">{action}</div>}
         </header>
       )}
