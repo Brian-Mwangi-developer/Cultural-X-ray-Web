@@ -135,7 +135,7 @@ export function shotWords(shots: number[]) {
 export const sentence = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
 
 /** What each shot is, in a few words: its action, else its setting. */
-export const shotName = (shot: AdShot) => sentence(shot.description?.action ?? shot.description?.setting ?? `Shot ${shot.index + 1}`);
+export const shotName = (shot: AdShot) => sentence((shot.description?.action ?? shot.description?.setting ?? `Shot ${shot.index + 1}`).replace(/[.\s]+$/, ""));
 
 /* ------------------------------------------------------------- progress */
 

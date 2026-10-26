@@ -39,6 +39,11 @@ export function Player({
   useEffect(() => {
     report.current = onTime;
   });
+  // The server-rendered video can load its metadata before React is listening.
+  useEffect(() => {
+    const v = video.current;
+    if (v && v.readyState >= 1 && Number.isFinite(v.duration)) setDuration(v.duration * 1000);
+  }, []);
 
   useImperativeHandle(ref, () => ({
     seek(ms, play) {
