@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { AdPage } from "@/components/adcheck/ad-page";
+import { AdCheckDetailPage } from "@/components/pages/workspace-pages";
 import { PageSkeleton } from "@/components/shell/page-skeleton";
-import type { AdDetail } from "@/lib/ads";
-import { orgPage } from "@/lib/page-context";
-import { backendGet } from "@/lib/session";
+import { ownerView } from "@/lib/page-context";
 
 export const metadata: Metadata = { title: "Ad check" };
 
@@ -17,10 +15,6 @@ export default function Page({ params }: PageProps<"/[org]/ad-check/[adId]">) {
 }
 
 async function Content({ params }: { params: PageProps<"/[org]/ad-check/[adId]">["params"] }) {
-  const ctx = await orgPage(params, "WORKSPACE");
   const { adId } = await params;
-  const orgId = ctx.org.organization.id;
-  const canEdit = ["owner", "admin", "strategist"].includes(ctx.org.membership.role);
-  const { ad } = (await backendGet<{ ad: AdDetail }>(`/api/v1/orgs/${orgId}/ads/${encodeURIComponent(adId)}`))!;
-  return <AdPage key={ad.id} orgId={orgId} slug={ctx.slug} initial={ad} rivals={ctx.rivals} canEdit={canEdit} />;
+  return <AdCheckDetailPage view={await ownerView(params)} adId={adId} />;
 }

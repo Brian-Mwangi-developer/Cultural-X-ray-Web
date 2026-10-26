@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { CreatorsPage } from "@/components/pages/workspace-pages";
 import { PageSkeleton } from "@/components/shell/page-skeleton";
-import { CreatorsPlay } from "@/components/views/plays";
-import { orgPage } from "@/lib/page-context";
-export const metadata: Metadata = { title: "Creator play" };
+import { ownerView } from "@/lib/page-context";
+
+export const metadata: Metadata = { title: "Partner with a creator" };
 
 export default function Page({ params }: PageProps<"/[org]/plays/creators">) {
   return (
@@ -14,6 +15,5 @@ export default function Page({ params }: PageProps<"/[org]/plays/creators">) {
 }
 
 async function Content({ params }: { params: PageProps<"/[org]/plays/creators">["params"] }) {
-  const ctx = await orgPage(params, "WORKSPACE");
-  return <CreatorsPlay slug={ctx.slug} market={ctx.market} />;
+  return <CreatorsPage view={await ownerView(params)} />;
 }

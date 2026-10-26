@@ -35,3 +35,19 @@ export const ROLE_COPY: Record<RoleName, { label: string; can: string }> = {
 
 export const roleLabel = (role: string) => ROLE_COPY[role as RoleName]?.label ?? role;
 export const isManager = (role: string) => role === "owner" || role === "admin";
+
+/**
+ * What someone at an agency can do in a client's workspace: the lower of their agency role and what
+ * the brand granted (VIEW → viewer, EDIT → strategist, MANAGE → admin). Mirrors `workspaceAccess`
+ * in backend/src/modules/orgs/access.ts, which is what actually enforces it.
+ */
+const GRANTED = { VIEW: "viewer", EDIT: "strategist", MANAGE: "admin" } as const;
+const RANK: Record<string, number> = { viewer: 0, strategist: 1, admin: 2, owner: 3 };
+export function clientRole(agencyRole: string, access: "VIEW" | "EDIT" | "MANAGE" | null): RoleName {
+  if (!access) return "viewer";
+  const granted = GRANTED[access];
+  return (RANK[agencyRole] ?? 0) <= RANK[granted]! ? (agencyRole as RoleName) : granted;
+}
+
+/** Builds maps and runs ad checks. */
+export const canWork = (role: string) => role === "owner" || role === "admin" || role === "strategist";

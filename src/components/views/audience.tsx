@@ -20,7 +20,7 @@ function cellStyle(shade: number) {
  * a5: who each brand reaches, and where. Everything is said in words: who's strongest with which
  * group, which places are only yours, and where a rival's customers go instead.
  */
-export function AudienceView({ crumbs, brand, data, sample, slug, orgId, canBuild }: { crumbs: Crumb[]; brand: string; data: AudienceData; sample?: boolean; slug?: string; orgId?: string; canBuild?: boolean }) {
+export function AudienceView({ crumbs, brand, data, sample, base, orgId, canBuild }: { crumbs: Crumb[]; brand: string; data: AudienceData; sample?: boolean; base?: string; orgId?: string; canBuild?: boolean }) {
   const you = data.sides[0]!;
   const globe = globeOf(data, sample);
   const yours = data.places.filter((p) => p.ranks.you && p.label !== "THEIRS").sort((a, b) => a.ranks.you! - b.ranks.you!);
@@ -106,7 +106,7 @@ export function AudienceView({ crumbs, brand, data, sample, slug, orgId, canBuil
             ) : (
               <div className="space-y-3 px-5 py-5">
                 <p className="text-[14px] leading-relaxed text-muted-foreground">This map was built before we read ages and genders. Rebuild it to see who your customers are.</p>
-                {canBuild && orgId && slug ? <BuildMapButton orgId={orgId} rebuild label="Rebuild my map" then={`/${slug}`} /> : null}
+                {canBuild && orgId && base ? <BuildMapButton orgId={orgId} rebuild label="Rebuild my map" then={base} /> : null}
               </div>
             )}
           </Panel>
@@ -136,9 +136,9 @@ export function AudienceView({ crumbs, brand, data, sample, slug, orgId, canBuil
                 </ul>
               </div>
             )}
-            {slug && (
+            {base && (
               <div className="border-t px-5 py-3">
-                <Link href={`/${slug}/map`} className={buttonVariants({ variant: "ghost", size: "pill" })}>
+                <Link href={`${base}/map`} className={buttonVariants({ variant: "ghost", size: "pill" })}>
                   See every place on the Culture Map
                 </Link>
               </div>

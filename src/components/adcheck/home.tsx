@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { ArrowRightIcon, CheckIcon, ChevronRightIcon, CircleAlertIcon, LoaderCircleIcon, LockIcon, MapIcon, UploadIcon } from "lucide-react";
 import { PageHeader, Panel, PanelRows, Status, TerritoryGlyph } from "@/components/app/parts";
-import { PageBody, TopBar } from "@/components/shell/top-bar";
+import { type Crumb, PageBody, TopBar } from "@/components/shell/top-bar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { probeFile } from "@/components/adcheck/frames";
 import { Upload } from "@/components/adcheck/upload";
@@ -23,14 +23,15 @@ export type Picked = { file: File; url: string; durationMs: number; width: numbe
  * the drop target shrinks above the list. Picking a video moves straight to R2 (set up the check
  * while it uploads).
  */
-export function AdCheckHome({ orgId, slug, initial, rivals, canCreate, hasMap }: { orgId: string; slug: string; initial: AdSummary[]; rivals: string[]; canCreate: boolean; hasMap: boolean }) {
+export function AdCheckHome({ orgId, base, trail = [], initial, rivals, canCreate, hasMap }: { orgId: string; base: string; trail?: Crumb[]; initial: AdSummary[]; rivals: string[]; canCreate: boolean; hasMap: boolean }) {
   const [picked, setPicked] = useState<Picked | null>(null);
 
   if (picked)
     return (
       <Upload
         orgId={orgId}
-        slug={slug}
+        base={base}
+        trail={trail}
         picked={picked}
         rivals={rivals}
         onCancel={() => {
@@ -43,7 +44,7 @@ export function AdCheckHome({ orgId, slug, initial, rivals, canCreate, hasMap }:
   const empty = initial.length === 0;
   return (
     <>
-      <TopBar crumbs={[{ label: "Ad check" }]} actions={!empty && canCreate && hasMap ? <PickButton onPick={setPicked} size="pill" label="Check an ad" /> : undefined} />
+      <TopBar crumbs={[...trail, { label: "Ad check" }]} actions={!empty && canCreate && hasMap ? <PickButton onPick={setPicked} size="pill" label="Check an ad" /> : undefined} />
       <PageBody>
         <div className="mx-auto max-w-[1100px] space-y-7">
           <PageHeader
@@ -53,14 +54,14 @@ export function AdCheckHome({ orgId, slug, initial, rivals, canCreate, hasMap }:
           />
 
           {!hasMap ? (
-            <NeedsMap slug={slug} />
+            <NeedsMap base={base} />
           ) : canCreate ? (
             <DropZone onPick={setPicked} compact={!empty} />
           ) : empty ? (
             <p className="rounded-[14px] border border-dashed bg-muted/40 px-6 py-8 text-center text-[14px] text-muted-foreground">No ads have been checked yet. Owners, admins and strategists can upload one.</p>
           ) : null}
 
-          {!empty && <AdList ads={initial} slug={slug} />}
+          {!empty && <AdList ads={initial} base={base} />}
           {empty && <WhatYouGet rivals={rivals} />}
 
           <p className="flex items-center gap-2 text-[12.5px] text-faint">
@@ -224,7 +225,7 @@ function Fan({ over }: { over: boolean }) {
   );
 }
 
-function NeedsMap({ slug }: { slug: string }) {
+function NeedsMap({ base }: { base: string }) {
   return (
     <section className="flex flex-wrap items-center gap-5 rounded-[18px] border bg-card px-6 py-6">
       <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -234,7 +235,7 @@ function NeedsMap({ slug }: { slug: string }) {
         <p className="text-[15px] font-semibold">Build your Culture Map first</p>
         <p className="mt-0.5 text-[13.5px] text-muted-foreground">An ad is checked against your customers’ culture and your rivals’. It takes about a minute.</p>
       </div>
-      <Link href={`/${slug}/map`} className={buttonVariants({ size: "pill" })}>
+      <Link href={`${base}/map`} className={buttonVariants({ size: "pill" })}>
         Go to Culture Map
         <ArrowRightIcon data-icon="inline-end" />
       </Link>
@@ -244,14 +245,14 @@ function NeedsMap({ slug }: { slug: string }) {
 
 /* --------------------------------------------------------------- list */
 
-function AdList({ ads, slug }: { ads: AdSummary[]; slug: string }) {
+function AdList({ ads, base }: { ads: AdSummary[]; base: string }) {
   return (
     <Panel title="Your ad checks" action={`${ads.length} ${ads.length === 1 ? "ad" : "ads"}`}>
       <PanelRows>
         {ads.map((ad) => {
           const lean = leanWord(ad.lean, ad.rival);
           return (
-            <Link key={ad.id} href={`/${slug}/ad-check/${ad.id}`} className="group flex items-center gap-4 px-[18px] py-[var(--row-y)] transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none">
+            <Link key={ad.id} href={`${base}/ad-check/${ad.id}`} className="group flex items-center gap-4 px-[18px] py-[var(--row-y)] transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14.5px] font-medium">{ad.title}</p>
                 <p className="mt-0.5 truncate text-[12.5px] text-muted-foreground tabular-nums">

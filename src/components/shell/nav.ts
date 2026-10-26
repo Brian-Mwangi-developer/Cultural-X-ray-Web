@@ -21,14 +21,16 @@ import type { OrgKind } from "@/lib/session";
 
 export type NavItem = { label: string; href: string; icon: LucideIcon; shortcut?: string; exact?: boolean; count?: number };
 
-export const ownerNav = (slug: string): NavItem[] => [
-  { label: "Overview", href: `/${slug}`, icon: HouseIcon, exact: true },
-  { label: "Culture Map", href: `/${slug}/map`, icon: MapIcon },
-  { label: "Audience & places", href: `/${slug}/audience`, icon: UsersIcon },
-  { label: "Plays", href: `/${slug}/plays`, icon: SparklesIcon },
-  { label: "Ad check", href: `/${slug}/ad-check`, icon: ScanSearchIcon },
-  { label: "Ask X-Ray", href: `/${slug}/ask`, icon: MessageSquareIcon, shortcut: "⌘J" },
+/** A brand's workspace pages: the same list for its own team and for a connected agency. */
+const workspaceNav = (base: string): NavItem[] => [
+  { label: "Overview", href: base, icon: HouseIcon, exact: true },
+  { label: "Culture Map", href: `${base}/map`, icon: MapIcon },
+  { label: "Audience & places", href: `${base}/audience`, icon: UsersIcon },
+  { label: "Plays", href: `${base}/plays`, icon: SparklesIcon },
+  { label: "Ad check", href: `${base}/ad-check`, icon: ScanSearchIcon },
 ];
+
+export const ownerNav = (slug: string): NavItem[] => [...workspaceNav(`/${slug}`), { label: "Ask X-Ray", href: `/${slug}/ask`, icon: MessageSquareIcon, shortcut: "⌘J" }];
 
 export const agencyNav = (slug: string): NavItem[] => [
   { label: "Home", href: `/${slug}`, icon: HouseIcon, exact: true },
@@ -36,15 +38,7 @@ export const agencyNav = (slug: string): NavItem[] => [
   { label: "Ask X-Ray", href: `/${slug}/ask`, icon: MessageSquareIcon, shortcut: "⌘J" },
 ];
 
-export const clientNav = (agencySlug: string, clientSlug: string): NavItem[] => {
-  const base = `/${agencySlug}/clients/${clientSlug}`;
-  return [
-    { label: "Culture Map", href: base, icon: MapIcon, exact: true },
-    { label: "Plays & briefs", href: `${base}/plays`, icon: SparklesIcon },
-    { label: "Ad checks", href: `${base}/ads`, icon: ScanSearchIcon },
-    { label: "Audience & places", href: `${base}/audience`, icon: UsersIcon },
-  ];
-};
+export const clientNav = (agencySlug: string, clientSlug: string): NavItem[] => workspaceNav(`/${agencySlug}/clients/${clientSlug}`);
 
 export type SettingsNav = { group: string; items: NavItem[] }[];
 

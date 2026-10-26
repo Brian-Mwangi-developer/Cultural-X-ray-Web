@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CircleAlertIcon, EllipsisIcon, LoaderCircleIcon, RotateCwIcon, Trash2Icon, VideoOffIcon } from "lucide-react";
-import { PageBody, TopBar } from "@/components/shell/top-bar";
+import { type Crumb, PageBody, TopBar } from "@/components/shell/top-bar";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -27,7 +27,7 @@ const POLL_MS = 2000;
  * One ad check: R3 while it's read (polling, paused while the tab is hidden), R4 when it's ready,
  * or what went wrong with a way forward. Delete video and Delete check live in the "…" menu.
  */
-export function AdPage({ orgId, slug, initial, rivals, canEdit }: { orgId: string; slug: string; initial: AdDetail; rivals: string[]; canEdit: boolean }) {
+export function AdPage({ orgId, base, trail = [], initial, rivals, canEdit }: { orgId: string; base: string; trail?: Crumb[]; initial: AdDetail; rivals: string[]; canEdit: boolean }) {
   const router = useRouter();
   const [ad, setAd] = useState(initial);
   const [confirm, setConfirm] = useState<"video" | "check" | null>(null);
@@ -74,7 +74,7 @@ export function AdPage({ orgId, slug, initial, rivals, canEdit }: { orgId: strin
     setBusy(true);
     if (what === "check") {
       const done = await attempt(() => ads.remove(orgId, ad.id), { where: "adcheck.delete", success: "Ad check deleted" });
-      if (done.ok) return router.push(`/${slug}/ad-check`);
+      if (done.ok) return router.push(`${base}/ad-check`);
     } else {
       const done = await attempt(() => ads.deleteVideo(orgId, ad.id), { where: "adcheck.deleteVideo", success: "Video deleted. The reading stays." });
       if (done.ok) setAd((a) => ({ ...a, hasVideo: false }));
@@ -86,7 +86,7 @@ export function AdPage({ orgId, slug, initial, rivals, canEdit }: { orgId: strin
   return (
     <>
       <TopBar
-        crumbs={[{ label: "Ad check", href: `/${slug}/ad-check` }, { label: ad.fileName ?? ad.title }]}
+        crumbs={[...trail, { label: "Ad check", href: `${base}/ad-check` }, { label: ad.fileName ?? ad.title }]}
         actions={
           canEdit && !live ? (
             <DropdownMenu>
@@ -116,7 +116,7 @@ export function AdPage({ orgId, slug, initial, rivals, canEdit }: { orgId: strin
           <Failed ad={ad} canEdit={canEdit} busy={busy} onRetry={retry} onDelete={() => setConfirm("check")} />
         ) : (
           <div className="mx-auto max-w-[1180px]">
-            <VerdictView orgId={orgId} slug={slug} ad={ad} rivals={rivals} />
+            <VerdictView orgId={orgId} base={base} ad={ad} rivals={rivals} />
           </div>
         )}
       </PageBody>

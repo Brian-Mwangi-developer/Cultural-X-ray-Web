@@ -5,7 +5,7 @@ import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowRightIcon, ClapperboardIcon, InfoIcon, QuoteIcon, VideoOffIcon } from "lucide-react";
 import { Panel, PanelRows, TerritoryGlyph, type Territory, WideOnly } from "@/components/app/parts";
-import { AssistantAvatar } from "@/components/ask/assistant-mark";
+import { XRayRead } from "@/components/app/xray-read";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useFrames } from "@/components/adcheck/frames";
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 const TERRITORY_WORD: Record<Territory, string> = { yours: "Leans your way", contested: "Shared", theirs: "Leans to a rival" };
 
 /** R4: what the ad is, shot by shot, and X-Ray's read of it, with the reasons beside it. */
-export function VerdictView({ orgId, slug, ad, rivals }: { orgId: string; slug: string; ad: AdDetail; rivals: string[] }) {
+export function VerdictView({ orgId, base, ad, rivals }: { orgId: string; base: string; ad: AdDetail; rivals: string[] }) {
   const player = useRef<PlayerHandle>(null);
   const [time, setTime] = useState(0);
   const duration = ad.durationMs ?? ad.shots.at(-1)?.endMs ?? 1;
@@ -43,7 +43,7 @@ export function VerdictView({ orgId, slug, ad, rivals }: { orgId: string; slug: 
 
         {/* Narrower than two columns, the read comes first: it's the answer. The reasons stay below. */}
         <div className="xl:hidden">
-          <ReadCard verdict={verdict} slug={slug} />
+          <ReadCard verdict={verdict} base={base} />
         </div>
 
         {src ? (
@@ -76,7 +76,7 @@ export function VerdictView({ orgId, slug, ad, rivals }: { orgId: string; slug: 
 
       <aside className="min-w-0 space-y-4">
         <div className="hidden xl:block">
-          <ReadCard verdict={verdict} slug={slug} />
+          <ReadCard verdict={verdict} base={base} />
         </div>
         {verdict && <Reasons verdict={verdict} shots={ad.shots} onSeek={src ? seek : undefined} />}
       </aside>
@@ -86,37 +86,39 @@ export function VerdictView({ orgId, slug, ad, rivals }: { orgId: string; slug: 
 
 /* --------------------------------------------------------- read card */
 
-function ReadCard({ verdict, slug }: { verdict: Verdict | null; slug: string }) {
+function ReadCard({ verdict, base }: { verdict: Verdict | null; base: string }) {
   const noMap = !verdict || verdict.headline.startsWith("Build your Culture Map");
   const lean = leanWord(verdict?.lean ?? null, verdict?.rival ?? null);
   return (
-    <section className="rounded-[14px] border bg-card p-[18px]" aria-label="X-Ray’s read">
-      <div className="flex items-center gap-2.5">
-        <AssistantAvatar size={26} />
-        <h2 className="text-[13.5px] font-semibold">X-Ray’s read</h2>
-        {!noMap && (
-          <span className="ml-auto inline-flex min-w-0 items-center gap-1.5 text-[12.5px] font-medium">
+    <XRayRead
+      compact
+      aside={
+        !noMap && (
+          <span className="inline-flex min-w-0 items-center gap-1.5 text-[12.5px] font-medium">
             {lean.glyph && <TerritoryGlyph kind={lean.glyph} decorative />}
             <span className="truncate">{lean.word}</span>
           </span>
-        )}
-      </div>
-      <p className="mt-3 text-[15px] leading-[1.5] text-pretty">{noMap ? "Build your Culture Map to see whose culture this ad speaks to. The shots and words are already read." : verdict.headline}</p>
-      {noMap ? (
-        <Link href={`/${slug}/map`} className={cn(buttonVariants({ size: "pill" }), "mt-4 h-10 w-full")}>
-          Go to Culture Map
-          <ArrowRightIcon data-icon="inline-end" />
-        </Link>
-      ) : (
-        <Button
-          className="mt-4 h-10 w-full rounded-full text-[14px] font-semibold"
-          onClick={() => toast("Suggested re-cuts are coming next.", { description: "For now, the notes below say which shots to change." })}
-        >
-          See the suggested re-cut
-          <ArrowRightIcon data-icon="inline-end" />
-        </Button>
-      )}
-    </section>
+        )
+      }
+      footer={
+        noMap ? (
+          <Link href={`${base}/map`} className={cn(buttonVariants({ size: "pill" }), "h-10 w-full")}>
+            Go to Culture Map
+            <ArrowRightIcon data-icon="inline-end" />
+          </Link>
+        ) : (
+          <Button
+            className="h-10 w-full rounded-full text-[14px] font-semibold"
+            onClick={() => toast("Suggested re-cuts are coming next.", { description: "For now, the notes below say which shots to change." })}
+          >
+            See the suggested re-cut
+            <ArrowRightIcon data-icon="inline-end" />
+          </Button>
+        )
+      }
+    >
+      <p>{noMap ? "Build your Culture Map to see whose culture this ad speaks to. The shots and words are already read." : verdict.headline}</p>
+    </XRayRead>
   );
 }
 

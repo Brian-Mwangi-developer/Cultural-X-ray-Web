@@ -33,7 +33,7 @@ export function AskLauncher({ orgId, slug, brand }: { orgId: string; slug: strin
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [label, setLabel] = useState(false);
-  const [chat, setChat] = useState({ key: "first", id: null as string | null });
+  const [chat, setChat] = useState({ key: "first", id: null as string | null, ask: undefined as string | undefined });
   const [status, setStatus] = useState<AskStatus | null>(null);
   const [mapLabel, setMapLabel] = useState<string | null>(null);
   const onAskPage = pathname === `/${slug}/ask`;
@@ -48,6 +48,18 @@ export function AskLauncher({ orgId, slug, brand }: { orgId: string; slug: strin
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && toggle(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  });
+
+  // "Ask X-Ray about this" anywhere on the page: a fresh chat that starts with that question.
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const question = (e as CustomEvent<{ question?: string }>).detail?.question?.trim();
+      if (!question) return;
+      setChat({ key: crypto.randomUUID(), id: null, ask: question });
+      toggle(true);
+    };
+    window.addEventListener("xray:ask", onAsk);
+    return () => window.removeEventListener("xray:ask", onAsk);
   });
 
   function toggle(next: boolean) {
@@ -86,7 +98,7 @@ export function AskLauncher({ orgId, slug, brand }: { orgId: string; slug: strin
           <header className="flex h-[52px] shrink-0 items-center gap-2.5 border-b pr-2 pl-4">
             <AssistantAvatar size={22} />
             <h2 className="flex-1 text-[14px] font-semibold">Ask X-Ray</h2>
-            <Button variant="ghost" size="icon-sm" aria-label="New chat" onClick={() => setChat({ key: crypto.randomUUID(), id: null })}>
+            <Button variant="ghost" size="icon-sm" aria-label="New chat" onClick={() => setChat({ key: crypto.randomUUID(), id: null, ask: undefined })}>
               <SquarePenIcon />
             </Button>
             <Button
@@ -104,7 +116,7 @@ export function AskLauncher({ orgId, slug, brand }: { orgId: string; slug: strin
               <XIcon />
             </Button>
           </header>
-          <AskChat key={chat.key} orgId={orgId} brand={brand} threadId={chat.id} initialMessages={[]} status={status} mapLabel={mapLabel} variant="panel" autoFocus onThread={(id) => setChat((c) => ({ ...c, id }))} />
+          <AskChat key={chat.key} orgId={orgId} brand={brand} threadId={chat.id} initialMessages={[]} status={status} mapLabel={mapLabel} variant="panel" autoFocus ask={chat.ask} onThread={(id) => setChat((c) => ({ ...c, id }))} />
         </section>
       )}
 

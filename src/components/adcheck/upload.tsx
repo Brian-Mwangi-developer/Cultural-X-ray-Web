@@ -6,7 +6,7 @@ import { put } from "@vercel/blob/client";
 import { toast } from "sonner";
 import { ArrowRightIcon, CheckIcon, CircleAlertIcon, LoaderCircleIcon, PlusIcon, RotateCwIcon, XIcon } from "lucide-react";
 import { PageHeader } from "@/components/app/parts";
-import { PageBody, TopBar } from "@/components/shell/top-bar";
+import { type Crumb, PageBody, TopBar } from "@/components/shell/top-bar";
 import { Button } from "@/components/ui/button";
 import { ChoiceChip } from "@/components/forms/fields";
 import { useFrames } from "@/components/adcheck/frames";
@@ -23,7 +23,7 @@ type Phase = { kind: "uploading"; loaded: number } | { kind: "uploaded"; pathnam
  * R2: the file goes straight from the browser to storage while the person says where the ad will
  * run. "Check this ad" works at any point: before the upload finishes it waits, then starts.
  */
-export function Upload({ orgId, slug, picked, rivals, onCancel }: { orgId: string; slug: string; picked: Picked; rivals: string[]; onCancel: () => void }) {
+export function Upload({ orgId, base, trail = [], picked, rivals, onCancel }: { orgId: string; base: string; trail?: Crumb[]; picked: Picked; rivals: string[]; onCancel: () => void }) {
   const router = useRouter();
   const { file } = picked;
   const [phase, setPhase] = useState<Phase>({ kind: "uploading", loaded: 0 });
@@ -75,14 +75,14 @@ export function Upload({ orgId, slug, picked, rivals, onCancel }: { orgId: strin
     setStarting(true);
     ads
       .start(orgId, id, { pathname: phase.pathname, placements })
-      .then(() => router.push(`/${slug}/ad-check/${id}`))
+      .then(() => router.push(`${base}/ad-check/${id}`))
       .catch((error: unknown) => {
         reportError(error, { where: "adcheck.start" });
         toast.error(userMessage(error));
         setWantsStart(false);
         setStarting(false);
       });
-  }, [wantsStart, phase, starting, orgId, placements, router, slug]);
+  }, [wantsStart, phase, starting, orgId, placements, router, base]);
 
   async function cancel() {
     abort.current?.abort();
@@ -96,7 +96,7 @@ export function Upload({ orgId, slug, picked, rivals, onCancel }: { orgId: strin
 
   return (
     <>
-      <TopBar crumbs={[{ label: "Ad check", href: `/${slug}/ad-check` }, { label: "New check" }]} />
+      <TopBar crumbs={[...trail, { label: "Ad check", href: `${base}/ad-check` }, { label: "New check" }]} />
       <PageBody>
         <div className="mx-auto max-w-[1100px]">
           <PageHeader title="Set up the check" description="While it uploads, say where the ad will run." />

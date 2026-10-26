@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { ArrowRightIcon, FileTextIcon, InfoIcon, MessageSquareIcon, MicIcon, PlusIcon, UserIcon, XIcon } from "lucide-react";
 import { Evidence, PageHeader, SampleBadge, TerritoryGlyph, WideOnly } from "@/components/app/parts";
-import { PageBody, TopBar } from "@/components/shell/top-bar";
+import { type Crumb, PageBody, TopBar } from "@/components/shell/top-bar";
 import { buttonVariants } from "@/components/ui/button";
 import { CREATORS, PLAYS } from "@/lib/sample-data";
 
 const ICONS = { user: UserIcon, mic: MicIcon, file: FileTextIcon } as const;
 
 /** Owner's list of plays: each one a move with its source. */
-export function PlaysList({ slug, rival }: { slug: string; rival: string }) {
+export function PlaysList({ base, rival, trail = [] }: { base: string; rival: string; trail?: Crumb[] }) {
   return (
     <>
-      <TopBar crumbs={[{ label: "Plays" }]} actions={<SampleBadge />} />
+      <TopBar crumbs={[...trail, { label: "Plays" }]} actions={<SampleBadge />} />
       <PageBody className="space-y-8">
         <PageHeader eyebrow="This month" title="Plays" description="Moves your map suggests, each tied to the evidence behind it. New ones arrive as your map refreshes." />
         <ul className="divide-y rounded-[14px] border bg-card">
@@ -28,7 +28,7 @@ export function PlaysList({ slug, rival }: { slug: string; rival: string }) {
                   <p className="text-[13.5px] text-muted-foreground">{play.body(rival)}</p>
                 </div>
                 <Evidence className="hidden md:inline-flex">{play.evidence}</Evidence>
-                <Link href={play.id === "creators" ? `/${slug}/plays/creators` : `/${slug}/plays`} className={buttonVariants({ variant: "outline", size: "pill" })}>
+                <Link href={play.id === "creators" ? `${base}/plays/creators` : `${base}/plays`} className={buttonVariants({ variant: "outline", size: "pill" })}>
                   {play.action}
                   <ArrowRightIcon data-icon="inline-end" />
                 </Link>
@@ -42,15 +42,15 @@ export function PlaysList({ slug, rival }: { slug: string; rival: string }) {
 }
 
 /** o4: the creators behind a creator play, ranked by fit. */
-export function CreatorsPlay({ slug, market }: { slug: string; market: string }) {
+export function CreatorsPlay({ base, market, trail = [] }: { base: string; market: string; trail?: Crumb[] }) {
   return (
     <>
       <TopBar
-        crumbs={[{ label: "Plays", href: `/${slug}/plays` }, { label: "Partner with a climbing creator" }]}
+        crumbs={[...trail, { label: "Plays", href: `${base}/plays` }, { label: "Partner with a climbing creator" }]}
         actions={
           <>
             <SampleBadge className="hidden sm:inline-flex" />
-            <Link href={`/${slug}/ask`} className={buttonVariants({ variant: "outline", size: "pill" })}>
+            <Link href={`${base}/ask`} className={buttonVariants({ variant: "outline", size: "pill" })}>
               <MessageSquareIcon data-icon="inline-start" />
               Ask X-Ray
             </Link>

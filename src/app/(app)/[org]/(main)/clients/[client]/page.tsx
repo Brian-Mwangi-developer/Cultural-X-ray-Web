@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { OverviewPage } from "@/components/pages/workspace-pages";
 import { PageSkeleton } from "@/components/shell/page-skeleton";
-import { CultureMapView } from "@/components/views/culture-map";
-import { clientPage } from "@/lib/page-context";
-export const metadata: Metadata = { title: "Culture Map" };
+import { clientView } from "@/lib/page-context";
+
+export const metadata: Metadata = { title: "Overview" };
 
 export default function Page({ params }: PageProps<"/[org]/clients/[client]">) {
   return (
@@ -14,6 +15,5 @@ export default function Page({ params }: PageProps<"/[org]/clients/[client]">) {
 }
 
 async function Content({ params }: { params: PageProps<"/[org]/clients/[client]">["params"] }) {
-  const ctx = await clientPage(params);
-  return <CultureMapView crumbs={ctx.crumbs("Culture Map")} brand={ctx.client.workspace.name} rivals={ctx.client.workspace.rivals} defaultMarket={ctx.client.workspace.markets[0] ?? "US"} />;
+  return <OverviewPage view={await clientView(params)} />;
 }

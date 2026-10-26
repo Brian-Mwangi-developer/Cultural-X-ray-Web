@@ -15,8 +15,6 @@ import lakes from "../../public/images/panel-lakes.jpg";
 import mic from "../../public/images/panel-mic.jpg";
 import misty from "../../public/images/panel-misty.jpg";
 import type { Territory } from "@/components/app/parts";
-import type { AudienceData } from "@/lib/audience";
-import { sampleCities } from "@/lib/globe-data";
 import { possessive } from "@/lib/intent";
 
 export const PHOTOS = { climber, court, street, dusk, forest, hiker, host, lakes, mic, misty } satisfies Record<string, StaticImageData>;
@@ -70,35 +68,6 @@ export const FILMS: MapItem[] = [
   { id: "f7", name: "Man vs. Wild", kind: "TV", tier: "mainstream", territory: "theirs", affinity: 0.85 },
 ];
 
-/** Who-and-where for views not connected to a map yet (the agency's client pages). Same shape as the live API. */
-export function sampleAudience(brand: string, rivals: string[]): AudienceData {
-  const rival = rivals[0] ?? "Your rival";
-  const cell = (value: number | null, lowConfidence = false) => ({ value, masked: value === null, lowConfidence });
-  const rows: [string, string, (number | null)[], boolean[]?][] = [
-    ["age:24_and_younger", "Under 25", [0.58, 0.71]],
-    ["age:25_to_29", "25–29", [0.74, 0.77]],
-    ["age:30_to_34", "30–34", [0.81, 0.73]],
-    ["age:35_to_44", "35–44", [0.79, 0.62]],
-    ["age:45_to_54", "45–54", [0.72, null]],
-    ["age:55_and_older", "55 and over", [0.84, 0.61], [false, true]],
-    ["gender:female", "Women", [0.69, 0.55]],
-    ["gender:male", "Men", [0.66, 0.74]],
-  ];
-  return {
-    id: "sample",
-    market: "US",
-    builtAt: null,
-    queryCount: 32,
-    hasAudience: true,
-    sides: [
-      { key: "you", name: brand, readThrough: false },
-      { key: "rival", name: rival, readThrough: false },
-    ],
-    segments: rows.map(([key, label, [you, them], low]) => ({ key, label, cells: { you: cell(you ?? null, low?.[0]), rival: cell(them ?? null, low?.[1]) } })),
-    places: sampleCities(rival).map((c) => ({ id: c.id, name: c.name, detail: c.region, lat: c.lat, lon: c.lng, label: c.territory === "yours" ? "YOURS" : c.territory === "contested" ? "CONTESTED" : "THEIRS", rival: c.rival, ranks: c.ranks })),
-  };
-}
-
 export const PLAYS = [
   {
     id: "creators",
@@ -138,42 +107,9 @@ export const CREATORS = [
   { initials: "UE", name: "Ultra Endure", platform: "YouTube · ultra running", tier: "Mid", territory: "theirs", fit: 0.69, reaches: "Chamonix" },
 ] as const;
 
-export const AD_TRACKS = [
-  { lane: "Setting", spans: [{ from: 0, to: 12, label: "Foggy ridge", territory: "theirs" }, { from: 12.4, to: 30, label: "Summit cairn", territory: "contested" }] },
-  { lane: "Styling", spans: [{ from: 0, to: 30, label: "Tactical shell, gaiters", territory: "theirs" }] },
-  { lane: "Script", spans: [{ from: 2, to: 10, label: "“Push past your limits”", territory: "theirs" }, { from: 15, to: 23, label: "“Find your quiet”", territory: "yours" }] },
-  { lane: "On-screen", spans: [{ from: 25, to: 30, label: "BUILT FOR THE WORST", territory: "theirs" }] },
-  { lane: "Sound", spans: [{ from: 0, to: 30, label: "Low brass, drums · no commercial track", territory: "theirs" }] },
-] as const;
-
-export const AD_PULLS = [
-  { title: "Tactical shell, gaiters", meta: "Styling · Matches survival TV", weight: "High" },
-  { title: "“Push past your limits”", meta: "Script · Endurance language", weight: "Medium" },
-  { title: "“Built for the worst”", meta: "On-screen · Toughness claim", weight: "Medium" },
-];
-
-export const AD_FIXES = [
-  { area: "Styling", fix: "Trail-worn layers; the tone of Free Solo, not survival TV" },
-  { area: "Script", fix: "Swap the endurance line for one about feeling better outside" },
-  { area: "On-screen", fix: "Drop the toughness claim; end on the place" },
-];
-
 export const INBOX = [
   { icon: "check", title: "Map ready", client: 0, meta: (rival: string) => `vs ${rival} · 8 categories from 231 queries`, time: "12 min", action: "Open" },
   { icon: "flag", title: "Critic flagged 2 claims", client: 1, meta: () => "Brief “Gen Z, New York City” · one uncited, one sensitive audience", time: "1 h", action: "Review" },
   { icon: "scan", title: "Rival scan finished", client: 0, meta: (rival: string) => `14 of ${possessive(rival)} last 20 ads land in their own ground; 3 drift into yours`, time: "3 h", action: "See scan" },
   { icon: "clock", title: "Map ageing", client: 1, meta: () => "Built 34 days ago", time: "1 d", action: "Rebuild" },
 ] as const;
-
-export const BRIEF = {
-  title: "Trail, not survival",
-  subtitle: (brand: string) => `A brief for ${possessive(brand)} 25–34 audience in New York City and Los Angeles.`,
-  angle: (brand: string, rival: string) =>
-    `Show the outdoors as somewhere you go to feel better, not somewhere you go to prove something. That is ground ${brand} already owns: long-form wellbeing podcasts and conservation films, while survival TV and tactical styling belong to ${rival}.`,
-  carriers: [
-    { kind: "Creator", title: "A climber from the shared climbing world", note: "Contested ground that leans yours", evidence: "lean 54/46" },
-    { kind: "Podcast", title: "Host-read on 10% Happier", note: "Only you have it; mainstream reach", evidence: "0.91" },
-    { kind: "Setting", title: "Moab at first light", note: "Where the brand over-indexes", evidence: "heatmap" },
-    { kind: "Sound", title: "Warm acoustic folk, mid-tempo, no vocals", note: "From artist taste; fill from a commercial music library", evidence: "genre tags" },
-  ],
-};

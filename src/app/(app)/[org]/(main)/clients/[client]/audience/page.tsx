@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { AudiencePage } from "@/components/pages/workspace-pages";
 import { PageSkeleton } from "@/components/shell/page-skeleton";
-import { AudienceView } from "@/components/views/audience";
-import { clientPage } from "@/lib/page-context";
-import { sampleAudience } from "@/lib/sample-data";
+import { clientView } from "@/lib/page-context";
+
 export const metadata: Metadata = { title: "Audience & places" };
 
 export default function Page({ params }: PageProps<"/[org]/clients/[client]/audience">) {
@@ -15,8 +15,5 @@ export default function Page({ params }: PageProps<"/[org]/clients/[client]/audi
 }
 
 async function Content({ params }: { params: PageProps<"/[org]/clients/[client]/audience">["params"] }) {
-  const ctx = await clientPage(params);
-  // Agencies can't read a client's map yet (backend Architecture.md §12), so this stays sample data.
-  const brand = ctx.client.workspace.name;
-  return <AudienceView crumbs={ctx.crumbs("Audience & places")} brand={brand} data={sampleAudience(brand, ctx.client.workspace.rivals)} sample />;
+  return <AudiencePage view={await clientView(params)} />;
 }

@@ -1,6 +1,8 @@
 import "server-only";
 import { notFound } from "next/navigation";
+import type { Crumb } from "@/components/shell/top-bar";
 import { marketName, readIntent, rivalNames, seedNames } from "@/lib/intent";
+import { canWork, clientRole } from "@/lib/roles";
 import { agencyClients, requireOrg, requireUser, type OrgKind } from "@/lib/session";
 
 type Params = Promise<{ org: string }>;
@@ -40,5 +42,65 @@ export async function clientPage(params: Promise<{ org: string; client: string }
       { label: client.workspace.name, href: base },
       { label: page },
     ],
+  };
+}
+
+/**
+ * One brand's workspace, seen by whoever is looking: its own team (`/judesicecream/…`) or an agency
+ * it's connected to (`/harborandpine/clients/judesicecream/…`). Every workspace page renders from
+ * this, so both sides show the same thing. The backend decides access (workspaceAccess); `role` here
+ * only shapes the UI.
+ */
+export type WorkspaceView = {
+  orgId: string;
+  brand: string;
+  rivals: string[];
+  market: string;
+  marketCode: "US" | "GB";
+  /** Where the workspace's pages live: "/judesicecream" or "/harborandpine/clients/judesicecream". */
+  base: string;
+  /** Breadcrumbs ending in the given parts. */
+  crumbs: (...parts: Crumb[]) => Crumb[];
+  role: string;
+  canWork: boolean;
+  /** The Ask X-Ray panel is on owner pages; agencies ask from their own Ask page. */
+  canAsk: boolean;
+  viaAgency: boolean;
+};
+
+export async function ownerView(params: Params): Promise<WorkspaceView> {
+  const ctx = await orgPage(params, "WORKSPACE");
+  const role = ctx.org.membership.role;
+  return {
+    orgId: ctx.org.organization.id,
+    brand: ctx.brand,
+    rivals: ctx.rivals,
+    market: ctx.market,
+    marketCode: ctx.marketCode === "GB" ? "GB" : "US",
+    base: `/${ctx.slug}`,
+    crumbs: (...parts) => parts,
+    role,
+    canWork: canWork(role),
+    canAsk: true,
+    viaAgency: false,
+  };
+}
+
+export async function clientView(params: Promise<{ org: string; client: string }>): Promise<WorkspaceView> {
+  const ctx = await clientPage(params);
+  const ws = ctx.client.workspace;
+  const role = clientRole(ctx.org.membership.role, ctx.client.access);
+  return {
+    orgId: ws.id,
+    brand: ws.name,
+    rivals: ws.rivals,
+    market: marketName(ws.markets[0]),
+    marketCode: ws.markets[0] ?? "US",
+    base: ctx.base,
+    crumbs: (...parts) => [{ label: "Clients", href: `/${ctx.slug}/settings/clients` }, { label: ws.name, href: ctx.base }, ...parts],
+    role,
+    canWork: canWork(role),
+    canAsk: false,
+    viaAgency: true,
   };
 }

@@ -178,6 +178,7 @@ export function AskChat({
   variant,
   onThread,
   autoFocus,
+  ask,
 }: {
   orgId: string;
   brand: string;
@@ -188,6 +189,8 @@ export function AskChat({
   variant: "page" | "panel";
   onThread?: (id: string) => void;
   autoFocus?: boolean;
+  /** A question to send as soon as the chat opens ("Ask X-Ray about this"). */
+  ask?: string;
 }) {
   // Created once: the transport keeps the thread id it learns from the first reply.
   const [transport] = useState(() => askTransport(orgId, { current: threadId }, (id) => onThread?.(id)));
@@ -217,6 +220,19 @@ export function AskChat({
     setDraft("");
     void sendMessage({ text: q });
   }
+
+  // Sent once per chat, on the next tick: in development React mounts effects twice, and a message
+  // sent from the first (discarded) pass never reaches the chat that stays on screen.
+  const asked = useRef(false);
+  useEffect(() => {
+    if (!ask || asked.current) return;
+    const timer = setTimeout(() => {
+      asked.current = true;
+      stick.current = true;
+      void sendMessage({ text: ask });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [ask, sendMessage]);
 
   const empty = messages.length === 0;
   const width = panel ? "px-4" : "mx-auto w-full max-w-[760px] px-4 sm:px-6";
