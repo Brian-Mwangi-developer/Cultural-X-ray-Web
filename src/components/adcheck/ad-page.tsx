@@ -32,7 +32,7 @@ export function AdPage({ orgId, base, trail = [], initial, rivals, canEdit }: { 
   const [ad, setAd] = useState(initial);
   const [confirm, setConfirm] = useState<"video" | "check" | null>(null);
   const [busy, setBusy] = useState(false);
-  const live = reading(ad.status);
+  const live = reading(ad.status) || ad.stage === "writing re-cuts";
 
   useEffect(() => {
     if (!live) return;
@@ -70,6 +70,11 @@ export function AdPage({ orgId, base, trail = [], initial, rivals, canEdit }: { 
     setBusy(false);
   }
 
+  async function writeRecuts() {
+    const done = await attempt(() => ads.recut(orgId, ad.id), { where: "adcheck.recut" });
+    if (done.ok) setAd((a) => ({ ...a, stage: "writing re-cuts" }));
+  }
+
   async function remove(what: "video" | "check") {
     setBusy(true);
     if (what === "check") {
@@ -88,7 +93,7 @@ export function AdPage({ orgId, base, trail = [], initial, rivals, canEdit }: { 
       <TopBar
         crumbs={[...trail, { label: "Ad check", href: `${base}/ad-check` }, { label: ad.fileName ?? ad.title }]}
         actions={
-          canEdit && !live ? (
+          canEdit && !reading(ad.status) ? (
             <DropdownMenu>
               <DropdownMenuTrigger render={<Button variant="outline" size="icon-sm" className="rounded-full" aria-label="More actions" />}>
                 <EllipsisIcon />
@@ -110,13 +115,13 @@ export function AdPage({ orgId, base, trail = [], initial, rivals, canEdit }: { 
         }
       />
       <PageBody>
-        {live ? (
+        {reading(ad.status) ? (
           <Reading orgId={orgId} ad={ad} />
         ) : ad.status === "FAILED" ? (
           <Failed ad={ad} canEdit={canEdit} busy={busy} onRetry={retry} onDelete={() => setConfirm("check")} />
         ) : (
           <div className="mx-auto max-w-[1180px]">
-            <VerdictView orgId={orgId} base={base} ad={ad} rivals={rivals} />
+            <VerdictView orgId={orgId} base={base} ad={ad} rivals={rivals} onRecut={canEdit ? writeRecuts : undefined} />
           </div>
         )}
       </PageBody>

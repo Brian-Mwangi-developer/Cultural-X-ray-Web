@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { Territory } from "@/components/app/parts";
+import type { Recut } from "@/lib/recut";
 
 /*
  * Ad check (Figma page 11, boards R1–R4). The backend reads the ad in its worker; these pages upload,
@@ -50,7 +51,7 @@ export type Verdict = {
 export type AdDetail = Omit<AdSummary, "lean" | "rival" | "headline"> & {
   shots: AdShot[];
   elements: AdElement[];
-  check: { id: string; mapId: string; verdict: Verdict; createdAt: string } | null;
+  check: { id: string; mapId: string; verdict: Verdict; createdAt: string; recuts: Recut[] } | null;
 };
 
 export const PLACEMENTS = [
@@ -76,6 +77,8 @@ export const ads = {
   start: (orgId: string, adId: string, body: { pathname: string; placements: Placement[] }) =>
     api<{ ad: { id: string; status: AdStatus } }>(`/orgs/${orgId}/ads/${adId}/start`, { body }),
   retry: (orgId: string, adId: string) => api<{ ad: { id: string; status: AdStatus } }>(`/orgs/${orgId}/ads/${adId}/start`, { body: {} }),
+  /** Ask the worker to (re)write the suggested re-cuts; they show up in `get` when ready. */
+  recut: (orgId: string, adId: string) => api<{ ok: true }>(`/orgs/${orgId}/ads/${adId}/recuts`, { method: "POST" }),
   deleteVideo: (orgId: string, adId: string) => api<void>(`/orgs/${orgId}/ads/${adId}/video`, { method: "DELETE" }),
   remove: (orgId: string, adId: string) => api<void>(`/orgs/${orgId}/ads/${adId}`, { method: "DELETE" }),
 };

@@ -1,5 +1,6 @@
 import { AdCheckHome } from "@/components/adcheck/home";
 import { AdPage } from "@/components/adcheck/ad-page";
+import { RecutView } from "@/components/adcheck/recut-view";
 import { AudienceView } from "@/components/views/audience";
 import { CultureMapView } from "@/components/views/culture-map";
 import { MapBuilding } from "@/components/views/map-building";
@@ -10,6 +11,7 @@ import type { AudienceData } from "@/lib/audience";
 import { type CultureMap, inProgress } from "@/lib/maps";
 import type { WorkspaceView } from "@/lib/page-context";
 import { backendGet } from "@/lib/session";
+import { notFound, redirect } from "next/navigation";
 
 /*
  * Every page of a brand's workspace, written once. The owner's routes (/judesicecream/…) and an
@@ -79,4 +81,12 @@ export async function AdCheckPage({ view }: { view: WorkspaceView }) {
 export async function AdCheckDetailPage({ view, adId }: { view: WorkspaceView; adId: string }) {
   const { ad } = (await backendGet<{ ad: AdDetail }>(api(view, `/ads/${encodeURIComponent(adId)}`)))!;
   return <AdPage key={ad.id} orgId={view.orgId} base={view.base} trail={view.crumbs()} initial={ad} rivals={view.rivals} canEdit={view.canWork} />;
+}
+
+/** R5: the suggested re-cuts of a read ad. Without any yet, back to the read (which can write them). */
+export async function RecutPage({ view, adId }: { view: WorkspaceView; adId: string }) {
+  const { ad } = (await backendGet<{ ad: AdDetail }>(api(view, `/ads/${encodeURIComponent(adId)}`)))!;
+  if (ad.status !== "READY") notFound();
+  if (!ad.check?.recuts.length) redirect(`${view.base}/ad-check/${ad.id}`);
+  return <RecutView key={ad.id} orgId={view.orgId} base={view.base} trail={view.crumbs()} ad={ad} brand={view.brand} rivals={view.rivals} />;
 }

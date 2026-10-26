@@ -2,21 +2,26 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
-import { ArrowRightIcon, ClapperboardIcon, InfoIcon, QuoteIcon, VideoOffIcon } from "lucide-react";
+import { ArrowRightIcon, LoaderCircleIcon, ClapperboardIcon, InfoIcon, QuoteIcon, VideoOffIcon } from "lucide-react";
 import { Panel, PanelRows, TerritoryGlyph, type Territory, WideOnly } from "@/components/app/parts";
 import { XRayRead } from "@/components/app/xray-read";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useFrames } from "@/components/adcheck/frames";
 import { OverlayChip, Player, type PlayerHandle } from "@/components/adcheck/player";
+import { recutHref } from "@/lib/recut";
 import { type AdDetail, type AdElement, type AdShot, ago, clock, leanWord, seconds, sentence, shotName, shotWords, territoryOfLabel, type Verdict, videoUrl } from "@/lib/ads";
 import { cn } from "@/lib/utils";
 
 const TERRITORY_WORD: Record<Territory, string> = { yours: "Leans your way", contested: "Shared", theirs: "Leans to a rival" };
 
 /** R4: what the ad is, shot by shot, and X-Ray's read of it, with the reasons beside it. */
-export function VerdictView({ orgId, base, ad, rivals }: { orgId: string; base: string; ad: AdDetail; rivals: string[] }) {
+export function VerdictView({ orgId, base, ad, rivals, onRecut }: { orgId: string; base: string; ad: AdDetail; rivals: string[]; onRecut?: () => void }) {
+  const recutState: RecutState = {
+    href: ad.check?.recuts.length ? recutHref(base, ad.id) : null,
+    writing: ad.stage === "writing re-cuts",
+    onWrite: onRecut,
+  };
   const player = useRef<PlayerHandle>(null);
   const [time, setTime] = useState(0);
   const duration = ad.durationMs ?? ad.shots.at(-1)?.endMs ?? 1;
@@ -43,7 +48,7 @@ export function VerdictView({ orgId, base, ad, rivals }: { orgId: string; base: 
 
         {/* Narrower than two columns, the read comes first: it's the answer. The reasons stay below. */}
         <div className="xl:hidden">
-          <ReadCard verdict={verdict} base={base} />
+          <ReadCard verdict={verdict} base={base} recut={recutState} />
         </div>
 
         {src ? (
@@ -76,7 +81,7 @@ export function VerdictView({ orgId, base, ad, rivals }: { orgId: string; base: 
 
       <aside className="min-w-0 space-y-4">
         <div className="hidden xl:block">
-          <ReadCard verdict={verdict} base={base} />
+          <ReadCard verdict={verdict} base={base} recut={recutState} />
         </div>
         {verdict && <Reasons verdict={verdict} shots={ad.shots} onSeek={src ? seek : undefined} />}
       </aside>
@@ -86,7 +91,9 @@ export function VerdictView({ orgId, base, ad, rivals }: { orgId: string; base: 
 
 /* --------------------------------------------------------- read card */
 
-function ReadCard({ verdict, base }: { verdict: Verdict | null; base: string }) {
+type RecutState = { href: string | null; writing: boolean; onWrite?: () => void };
+
+function ReadCard({ verdict, base, recut }: { verdict: Verdict | null; base: string; recut: RecutState }) {
   const noMap = !verdict || verdict.headline.startsWith("Build your Culture Map");
   const lean = leanWord(verdict?.lean ?? null, verdict?.rival ?? null);
   return (
@@ -107,13 +114,22 @@ function ReadCard({ verdict, base }: { verdict: Verdict | null; base: string }) 
             <ArrowRightIcon data-icon="inline-end" />
           </Link>
         ) : (
-          <Button
-            className="h-10 w-full rounded-full text-[14px] font-semibold"
-            onClick={() => toast("Suggested re-cuts are coming next.", { description: "For now, the notes below say which shots to change." })}
-          >
-            See the suggested re-cut
-            <ArrowRightIcon data-icon="inline-end" />
-          </Button>
+          recut.href ? (
+            <Link href={recut.href} className={cn(buttonVariants(), "h-10 w-full rounded-full text-[14px] font-semibold")}>
+              See the suggested re-cut
+              <ArrowRightIcon data-icon="inline-end" />
+            </Link>
+          ) : recut.writing ? (
+            <Button disabled className="h-10 w-full rounded-full text-[14px] font-semibold">
+              <LoaderCircleIcon className="animate-spin" data-icon="inline-start" />
+              Writing the re-cuts…
+            </Button>
+          ) : recut.onWrite ? (
+            <Button onClick={recut.onWrite} className="h-10 w-full rounded-full text-[14px] font-semibold">
+              Write a suggested re-cut
+              <ArrowRightIcon data-icon="inline-end" />
+            </Button>
+          ) : null
         )
       }
     >
