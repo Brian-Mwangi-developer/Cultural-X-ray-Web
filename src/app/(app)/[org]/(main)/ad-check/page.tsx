@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { AdCheckHome } from "@/components/adcheck/home";
 import { PageSkeleton } from "@/components/shell/page-skeleton";
-import { AdCheckView } from "@/components/views/ad-check";
+import type { AdSummary } from "@/lib/ads";
+import type { CultureMap } from "@/lib/maps";
 import { orgPage } from "@/lib/page-context";
+import { backendGet } from "@/lib/session";
+
 export const metadata: Metadata = { title: "Ad check" };
 
 export default function Page({ params }: PageProps<"/[org]/ad-check">) {
@@ -15,5 +19,11 @@ export default function Page({ params }: PageProps<"/[org]/ad-check">) {
 
 async function Content({ params }: { params: PageProps<"/[org]/ad-check">["params"] }) {
   const ctx = await orgPage(params, "WORKSPACE");
-  return <AdCheckView crumbs={[{ label: "Ad check", href: `/${ctx.slug}/ad-check` }, { label: "draft_v3_trailhead.mp4" }]} brand={ctx.brand} rival={ctx.rivals[0] ?? "your rival"} />;
+  const orgId = ctx.org.organization.id;
+  const canCreate = ["owner", "admin", "strategist"].includes(ctx.org.membership.role);
+  const [{ ads }, { map }] = await Promise.all([
+    backendGet<{ ads: AdSummary[] }>(`/api/v1/orgs/${orgId}/ads`).then((r) => r!),
+    backendGet<{ map: CultureMap | null }>(`/api/v1/orgs/${orgId}/maps/latest`).then((r) => r!),
+  ]);
+  return <AdCheckHome orgId={orgId} slug={ctx.slug} initial={ads} rivals={ctx.rivals} canCreate={canCreate} hasMap={map?.status === "READY"} />;
 }

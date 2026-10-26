@@ -170,6 +170,23 @@
   to { transform: scaleX(1); }
 }
 
+/* Ad check (R3): an ember line sweeping across the frame being read, the part already read dimmed. */
+@keyframes ad-scan {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+.ad-scan {
+  overflow: hidden;
+}
+.ad-scan::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.32);
+  border-right: 3px solid var(--ember);
+  animation: ad-scan 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
 @utility animate-rise {
   animation: rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -182,6 +199,9 @@
   .animate-rise,
   .animate-marquee {
     animation: none;
+  }
+  .ad-scan::before {
+    display: none;
   }
 }
 /* Appearance preferences, set on <html> from the profile. */

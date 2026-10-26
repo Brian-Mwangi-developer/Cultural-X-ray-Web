@@ -11,6 +11,7 @@
   "dependencies": {
     "@ai-sdk/react": "4.0.132",
     "@base-ui/react": "^1.9.0",
+    "@vercel/blob": "^2.8.2",
     "@vis.gl/react-google-maps": "1.10.1",
     "ai": "7.0.129",
     "better-auth": "^1.7.11",
