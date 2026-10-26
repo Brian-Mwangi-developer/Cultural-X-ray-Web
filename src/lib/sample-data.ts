@@ -68,45 +68,6 @@ export const FILMS: MapItem[] = [
   { id: "f7", name: "Man vs. Wild", kind: "TV", tier: "mainstream", territory: "theirs", affinity: 0.85 },
 ];
 
-export const PLAYS = [
-  {
-    id: "creators",
-    kind: "Creator",
-    icon: "user",
-    title: "Partner with a mid-size climbing creator",
-    body: (rival: string) => `The climbing world is shared with ${rival} but leans your way. Mid-size creators cost less and land closer.`,
-    evidence: "lean 58/42",
-    action: "See 6 creators",
-  },
-  {
-    id: "podcast",
-    kind: "Podcast",
-    icon: "mic",
-    title: "Sponsor a host-read on Finding Mastery",
-    body: () => "Only your side of the map has it, and it holds in the UK cut.",
-    evidence: "UK rank 3",
-    action: "Draft the read",
-  },
-  {
-    id: "brief",
-    kind: "Brief",
-    icon: "file",
-    title: "Shoot the autumn film in the Lake District",
-    body: (rival: string) => `Your strongest UK destination; ${rival} ranks it ninth.`,
-    evidence: "destinations",
-    action: "Open brief",
-  },
-] as const;
-
-export const CREATORS = [
-  { initials: "NG", name: "Northern Grit", platform: "YouTube · bouldering", tier: "Mid", territory: "contested", fit: 0.82, reaches: "Sheffield, Manchester" },
-  { initials: "SR", name: "Sasha on Rock", platform: "Instagram · trad climbing", tier: "Niche", territory: "yours", fit: 0.79, reaches: "London, Bristol" },
-  { initials: "PH", name: "Peak Hour Films", platform: "YouTube · short films", tier: "Mid", territory: "yours", fit: 0.77, reaches: "London" },
-  { initials: "WM", name: "Wild Margins", platform: "Instagram · wild camping", tier: "Niche", territory: "yours", fit: 0.74, reaches: "Edinburgh, Lake District" },
-  { initials: "BB", name: "Boulder & Brew", platform: "TikTok · climbing gyms", tier: "Mid", territory: "contested", fit: 0.71, reaches: "London, Leeds" },
-  { initials: "UE", name: "Ultra Endure", platform: "YouTube · ultra running", tier: "Mid", territory: "theirs", fit: 0.69, reaches: "Chamonix" },
-] as const;
-
 export const INBOX = [
   { icon: "check", title: "Map ready", client: 0, meta: (rival: string) => `vs ${rival} · 8 categories from 231 queries`, time: "12 min", action: "Open" },
   { icon: "flag", title: "Critic flagged 2 claims", client: 1, meta: () => "Brief “Gen Z, New York City” · one uncited, one sensitive audience", time: "1 h", action: "Review" },
