@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LinkIcon, MonitorIcon, type LucideIcon } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ header */
@@ -124,13 +125,32 @@ export function Chip({ children, className, icon: Icon }: { children: React.Reac
   );
 }
 
-/** Where a claim comes from. Every number on a map links back to one of these. */
-export function Evidence({ children, mono, className, always }: { children: React.ReactNode; mono?: boolean; className?: string; /** Briefs keep their sources even when inline chips are turned off. */ always?: boolean }) {
-  return (
-    <span data-evidence={always ? undefined : ""} className={cn("inline-flex h-5 items-center gap-1 rounded-md border bg-muted px-1.5 text-[11px] whitespace-nowrap text-foreground/80", mono && "font-mono", className)}>
-      <LinkIcon className="size-[11px] text-muted-foreground" strokeWidth={2} aria-hidden />
-      {children}
+/**
+ * Where a claim comes from. Every claim links back to one of these. With `tip`, hovering or
+ * focusing the chip says what it rests on in plain words (the Qloo tag, who it leans to, where).
+ */
+export function Evidence({ children, mono, className, always, tip }: { children: React.ReactNode; mono?: boolean; className?: string; /** Briefs keep their sources even when inline chips are turned off. */ always?: boolean; tip?: React.ReactNode }) {
+  const chip = (
+    <span
+      data-evidence={always ? undefined : ""}
+      tabIndex={tip ? 0 : undefined}
+      className={cn(
+        "inline-flex h-5 max-w-full items-center gap-1 rounded-md border bg-muted px-1.5 text-[11px] whitespace-nowrap text-foreground/80",
+        mono && "font-mono",
+        tip && "cursor-help outline-none hover:border-foreground/25 focus-visible:ring-3 focus-visible:ring-ring/40",
+        className,
+      )}
+    >
+      <LinkIcon className="size-[11px] shrink-0 text-muted-foreground" strokeWidth={2} aria-hidden />
+      <span className="truncate">{children}</span>
     </span>
+  );
+  if (!tip) return chip;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={chip} />
+      <TooltipContent className="max-w-[300px] text-left leading-relaxed text-pretty">{tip}</TooltipContent>
+    </Tooltip>
   );
 }
 

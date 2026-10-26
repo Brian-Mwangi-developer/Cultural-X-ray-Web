@@ -56,18 +56,19 @@ const standingWords = (item: MapItem) => {
   return s.charAt(0).toLowerCase() + s.slice(1);
 };
 
-type Play = { id: string; kind: string; icon: LucideIcon; title: string; body: string; source: string; why: string };
+type Play = { id: string; kind: string; icon: LucideIcon; title: string; body: string; source: string; why: string; tip: string };
 
 /** Up to three plays, each straight from one item on the map. Nothing here is invented. */
 function playsOf(map: CultureMap): Play[] {
   const plays: Play[] = [];
+  const rivals = list(map.subjects.filter((s) => s.role === "RIVAL").map((s) => s.name)) || "your rivals";
   const podcast = categoryOf(map, "PODCAST")?.items.find((i) => i.label === "YOURS");
   if (podcast) {
-    plays.push({ id: "podcast", kind: "Podcast", icon: MicIcon, title: `Sponsor ${shortName(podcast.name)}`, body: `It's one of your customers' top podcasts, and none of your rivals' customers rank it. A host-read ad there speaks to people like yours.`, source: "Only yours · Podcasts", why: "only your customers rank it" });
+    plays.push({ id: "podcast", kind: "Podcast", icon: MicIcon, title: `Sponsor ${shortName(podcast.name)}`, body: `It's one of your customers' top podcasts, and none of your rivals' customers rank it. A host-read ad there speaks to people like yours.`, source: "Only yours · Podcasts", why: "only your customers rank it", tip: `${podcast.name} is one of your customers’ top podcasts on Qloo, and none of ${rivals}’ customers rank it.` });
   }
   const person = categoryOf(map, "PERSON")?.items.find((i) => i.label === "YOURS");
   if (person) {
-    plays.push({ id: "creator", kind: "Creator", icon: UserIcon, title: `Work with ${person.name}`, body: `${person.name} is one of the people your customers follow most, and no rival's customers share them.`, source: "Only yours · Creators", why: "no rival’s customers follow them" });
+    plays.push({ id: "creator", kind: "Creator", icon: UserIcon, title: `Work with ${person.name}`, body: `${person.name} is one of the people your customers follow most, and no rival's customers share them.`, source: "Only yours · Creators", why: "no rival’s customers follow them", tip: `${person.name} is among the people your customers follow most on Qloo, and none of ${rivals}’ customers rank them.` });
   }
   const shared = (["PODCAST", "TV_SHOW", "MOVIE"] as MapKind[])
     .flatMap((k) => categoryOf(map, k)?.items.filter((i) => i.label === "CONTESTED") ?? [])
@@ -82,6 +83,7 @@ function playsOf(map: CultureMap): Play[] {
       body: `Your customers and ${possessive(shared.rival)} customers both love ${shared.name}${leans ? ", and it leans your way" : ""}. Show up there first.`,
       source: `Shared with ${shared.rival}`,
       why: leans ? `shared with ${shared.rival}, and it leans your way` : `shared with ${shared.rival}`,
+      tip: `Your customers and ${possessive(shared.rival)} customers both rank ${shared.name} on Qloo${leans ? ", and it sits higher on your customers’ list" : ""}.`,
     });
   }
   return plays.slice(0, 3);
@@ -162,7 +164,11 @@ export function OverviewView({
 
           <XRayRead
             of={viaAgency ? `of ${possessive(brand)} Culture Map` : "of your Culture Map"}
-            aside={<Evidence>from {map.queryCount} Qloo lookups</Evidence>}
+            aside={
+              <Evidence tip={`Read from ${map.queryCount} Qloo lookups: what your customers and your rivals’ customers listen to, watch, follow and visit, and who each brand reaches.`}>
+                from {map.queryCount} Qloo lookups
+              </Evidence>
+            }
             basedOn={
               read.items.length > 0 && (
                 <>
@@ -254,7 +260,7 @@ export function OverviewView({
                   <h3 className="mt-4 text-[17px] leading-snug font-medium">{play.title}</h3>
                   <p className="mt-2 flex-1 text-[14px] leading-relaxed text-muted-foreground">{play.body}</p>
                   <div className="mt-5 flex items-center justify-between gap-3">
-                    <Evidence>{play.source}</Evidence>
+                    <Evidence tip={play.tip}>{play.source}</Evidence>
                     <Link href={`${base}/map`} className={buttonVariants({ variant: "outline", size: "pill" })}>
                       See why
                       <ArrowRightIcon data-icon="inline-end" />
