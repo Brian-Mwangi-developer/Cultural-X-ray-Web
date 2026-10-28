@@ -4,6 +4,8 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AskLauncher } from "@/components/ask/ask-launcher";
 import { SessionGuard } from "@/components/auth/session-guard";
 import { FeedbackTab } from "@/components/feedback/feedback-tab";
+import { GuideDock } from "@/components/guide/guide-bar";
+import { GuideProvider } from "@/components/guide/guide-context";
 import { PreferencesSync } from "@/lib/preferences";
 import type { ClientSummary, Membership, OrgContext } from "@/lib/session";
 import { AppSidebar, type ShellUser } from "./app-sidebar";
@@ -41,12 +43,18 @@ export function MainShell({
     <CommandMenu links={links}>
       <PreferencesSync preferences={user.preferences} />
       <SessionGuard userId={user.id} />
-      <SidebarProvider defaultOpen={sidebarOpen} style={{ "--sidebar-width": "16.5rem" } as React.CSSProperties}>
-        <AppSidebar user={user} org={org} memberships={memberships} clients={clients} />
-        <SidebarInset className="min-w-0 border-l bg-background">{children}</SidebarInset>
-      </SidebarProvider>
+      {/* The guide bar (Figma 19) docks under every page; its mark opens Ask X-Ray. */}
+      <GuideProvider orgId={o.id} base={`/${o.slug}`} kind={o.kind}>
+        <SidebarProvider defaultOpen={sidebarOpen} style={{ "--sidebar-width": "16.5rem" } as React.CSSProperties}>
+          <AppSidebar user={user} org={org} memberships={memberships} clients={clients} />
+          <SidebarInset className="min-w-0 border-l bg-background">
+            {children}
+            <GuideDock />
+          </SidebarInset>
+        </SidebarProvider>
+      </GuideProvider>
       {/* Agencies ask across clients once they can read client maps. */}
-      {o.kind === "WORKSPACE" && <AskLauncher orgId={o.id} slug={o.slug} brand={o.name} />}
+      {o.kind === "WORKSPACE" && <AskLauncher orgId={o.id} slug={o.slug} brand={o.name} docked />}
       <FeedbackTab email={user.email} />
     </CommandMenu>
   );

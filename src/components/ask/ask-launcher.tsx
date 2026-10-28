@@ -27,7 +27,7 @@ const announce = (open: boolean) => window.dispatchEvent(new CustomEvent("xray:a
  * a first visit. It opens a compact chat over the page; the expand button carries the same chat
  * to the full Ask X-Ray page. The panel stays mounted while closed so an answer keeps streaming.
  */
-export function AskLauncher({ orgId, slug, brand }: { orgId: string; slug: string; brand: string }) {
+export function AskLauncher({ orgId, slug, brand, docked = false }: { orgId: string; slug: string; brand: string; /** The guide bar is on the page and opens the chat itself. */ docked?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -54,8 +54,8 @@ export function AskLauncher({ orgId, slug, brand }: { orgId: string; slug: strin
   useEffect(() => {
     const onAsk = (e: Event) => {
       const question = (e as CustomEvent<{ question?: string }>).detail?.question?.trim();
-      if (!question) return;
-      setChat({ key: crypto.randomUUID(), id: null, ask: question });
+      // No question (the guide bar's mark): just open the chat as it was.
+      if (question) setChat({ key: crypto.randomUUID(), id: null, ask: question });
       toggle(true);
     };
     window.addEventListener("xray:ask", onAsk);
@@ -120,7 +120,7 @@ export function AskLauncher({ orgId, slug, brand }: { orgId: string; slug: strin
         </section>
       )}
 
-      {!open && (
+      {!open && !docked && (
         <div className="fixed right-5 bottom-5 z-40 flex items-center gap-3 sm:right-8 sm:bottom-8">
           {label && (
             <button type="button" onClick={() => toggle(true)} className="hidden items-center gap-2 rounded-full bg-foreground py-2 pr-2.5 pl-3.5 text-[13px] font-medium text-background shadow-lg sm:flex">
