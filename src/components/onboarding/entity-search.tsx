@@ -1,5 +1,6 @@
 "use client";
 
+import { SEARCH_MIN_CHARS, useDebounced } from "@/hooks/use-debounced";
 import { useEffect, useId, useRef, useState } from "react";
 import { ArrowRightIcon, GlobeIcon, LinkIcon, MapPinIcon, PlusIcon, SearchIcon, StarIcon, XIcon } from "lucide-react";
 import { BrandMark } from "@/components/app/parts";
@@ -65,14 +66,16 @@ export function EntitySearch({ kind, near, label, placeholder, addNoun, exclude 
   const isUrl = Boolean(onWebsite) && looksLikeUrl(trimmed);
   const shown = (results ?? []).filter((r) => !exclude.includes(r.id));
 
+  // One search once typing pauses; a newer one cancels the last.
+  const settled = useDebounced(trimmed);
   useEffect(() => {
-    if (trimmed.length < 2 || isUrl || (kind === "place" && !near)) return;
+    if (settled.length < SEARCH_MIN_CHARS || isUrl || (kind === "place" && !near)) return;
     const controller = new AbortController();
-    const timer = setTimeout(async () => {
+    void (async () => {
       setLoading(true);
       setError(null);
       try {
-        const found = kind === "place" && near ? await lookup.places(trimmed, near, controller.signal) : await lookup.brands(trimmed, controller.signal);
+        const found = kind === "place" && near ? await lookup.places(settled, near, controller.signal) : await lookup.brands(settled, controller.signal);
         setResults(found);
         setActive(0);
       } catch (e) {
@@ -80,12 +83,9 @@ export function EntitySearch({ kind, near, label, placeholder, addNoun, exclude 
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
-    }, 250);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [trimmed, isUrl, kind, near]);
+    })();
+    return () => controller.abort();
+  }, [settled, isUrl, kind, near]);
 
   const reset = () => {
     setQuery("");

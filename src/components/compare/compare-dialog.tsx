@@ -14,6 +14,7 @@ import { compare, type ComparePick, type CompareSet, MAX_RIVALS, MAX_SEEDS } fro
 import { AppError } from "@/lib/errors";
 import { type Card, lookup } from "@/lib/lookup";
 import { cn } from "@/lib/utils";
+import { SEARCH_MIN_CHARS, useDebounced } from "@/hooks/use-debounced";
 
 type Role = "rivals" | "seeds";
 
@@ -50,24 +51,24 @@ export function CompareDialog({ orgId, base, open, onOpenChange }: { orgId: stri
     };
   }, [open, orgId]);
 
-  // Qloo's brand search, a moment after typing stops.
+  // Qloo's brand search, once typing pauses; a newer search cancels the last.
+  const settled = useDebounced(query.trim());
   useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) return;
+    if (settled.length < SEARCH_MIN_CHARS) return;
     const ctrl = new AbortController();
-    const t = setTimeout(() => {
+    void (async () => {
       setSearching(true);
-      lookup
-        .brands(q, ctrl.signal)
-        .then((r) => setResults(r.filter((c) => c.kind === "brand").slice(0, 6)))
-        .catch(() => undefined)
-        .finally(() => setSearching(false));
-    }, 300);
-    return () => {
-      clearTimeout(t);
-      ctrl.abort();
-    };
-  }, [query]);
+      try {
+        const found = await lookup.brands(settled, ctrl.signal);
+        setResults(found.filter((c) => c.kind === "brand").slice(0, 6));
+      } catch {
+        /* cancelled or failed: the last results stay */
+      } finally {
+        if (!ctrl.signal.aborted) setSearching(false);
+      }
+    })();
+    return () => ctrl.abort();
+  }, [settled]);
 
   const chosen = new Set([...rivals, ...seeds].map((p) => p.id));
   const add = (card: Card, role: Role) => {

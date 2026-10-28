@@ -1,5 +1,6 @@
 "use client";
 
+import { SEARCH_MIN_CHARS, useDebounced } from "@/hooks/use-debounced";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { ArrowRightIcon, CheckIcon, ChevronDownIcon, CircleCheckIcon, MapPinIcon, PencilIcon, PlusIcon, SearchIcon, ShieldCheckIcon, SparklesIcon } from "lucide-react";
@@ -198,24 +199,22 @@ function TownField({ market, town, onTown }: { market: Market; town: Locality | 
   const [loading, setLoading] = useState(false);
   const trimmed = query.trim();
 
+  const settled = useDebounced(trimmed);
   useEffect(() => {
-    if (trimmed.length < 2 || town) return;
+    if (settled.length < SEARCH_MIN_CHARS || town) return;
     const controller = new AbortController();
-    const timer = setTimeout(async () => {
+    void (async () => {
       setLoading(true);
       try {
-        setResults(await lookup.localities(trimmed, market, controller.signal));
+        setResults(await lookup.localities(settled, market, controller.signal));
       } catch {
-        setResults([]);
+        if (!controller.signal.aborted) setResults([]);
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
-    }, 250);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [trimmed, market, town]);
+    })();
+    return () => controller.abort();
+  }, [settled, market, town]);
 
   if (town) {
     return (
