@@ -18,7 +18,7 @@ export const askApi = {
  * What the person has on screen as they ask: the page inside the workspace and the guide parts on it,
  * so the assistant can point at what's really there (backend guide tools).
  */
-function screenNow() {
+export function screenNow() {
   if (typeof document === "undefined") return undefined;
   const page = location.pathname.split("/").slice(2).join("/");
   const parts = [...new Set([...document.querySelectorAll<HTMLElement>("[data-guide]")].map((el) => el.dataset.guide!))].slice(0, 40);

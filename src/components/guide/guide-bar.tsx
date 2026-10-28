@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { ArrowRightIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, CompassIcon, HistoryIcon, ListIcon, MicIcon, ScanIcon, XIcon } from "lucide-react";
+import { ArrowRightIcon, CaptionsIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, CircleDotIcon, CompassIcon, EyeOffIcon, HistoryIcon, ListIcon, MicIcon, MicOffIcon, ScanIcon, XIcon } from "lucide-react";
 import { AssistantGlyph } from "@/components/ask/assistant-mark";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -52,6 +52,8 @@ function Bar() {
   const folded = guide.marks.includes("bar:folded");
   const doneCount = guide.steps.filter((s) => s.done).length;
   const parts = useXrayParts(g.xray);
+
+  if (g.voice.status !== "off") return <VoiceBar />;
 
   // Folded: the mark still opens Ask X-Ray; the rest unfolds the bar.
   if (folded && !g.run && !g.xray)
@@ -108,7 +110,7 @@ function Bar() {
               <button
                 type="button"
                 aria-label="Talk to X-Ray"
-                onClick={() => toast("Talking to X-Ray is coming next.", { description: "Voice needs Gemini’s live model switched on. Type to Ask X-Ray for now, or press X to X-ray this page." })}
+                onClick={() => (g.kind === "WORKSPACE" ? g.talk() : toast("Talking to X-Ray is on a brand’s own workspace for now."))}
                 className="hidden size-9 items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground sm:flex"
               />
             }
@@ -534,5 +536,116 @@ function Layers() {
       )}
     </>,
     document.body,
+  );
+}
+
+/* ------------------------------------------------------------------ voice */
+
+const BUSY: Record<string, string> = { read_map: "Reading your map…", read_audience: "Reading who you reach…", status: "Checking where you are…", about: "Reading how this page works…", remember: "Making a note…" };
+
+/** The bar while talking (Figma 22 · V1–V4): what's happening, the mic level, mute and end; captions above. */
+function VoiceBar() {
+  const g = useGuide()!;
+  const v = g.voice;
+  const last = v.lines.at(-1);
+  const kicker =
+    v.status === "consent" ? "Talk to X-Ray" : v.status === "connecting" ? "Connecting…" : v.muted ? "Muted" : v.speaking ? "Speaking · talk to interrupt" : v.busy ? (BUSY[v.busy] ?? "Working…") : "Listening";
+  return (
+    <div className="pointer-events-auto relative w-full max-w-[680px]">
+      {v.status === "consent" ? <Consent /> : <Captions />}
+      <div className="flex items-center gap-2 rounded-full border border-ember/60 bg-card p-1.5 shadow-[0_14px_36px_-14px_rgba(0,0,0,0.32)]" data-guide-bar>
+        <Mark className={cn(v.speaking && "motion-safe:animate-pulse")} />
+        <div className="min-w-0 flex-1 px-1">
+          <p className="truncate text-[11.5px] font-medium text-ember-ink">{kicker}</p>
+          <p className={cn("truncate text-[13.5px]", last ? "font-medium" : "text-muted-foreground")}>{v.status === "consent" ? "Your browser will ask for the microphone" : last ? last.text : "Go ahead, I’m listening…"}</p>
+        </div>
+        {v.status === "live" && !v.muted && !v.speaking && <Level value={v.level} />}
+        {v.status === "connecting" && <Spinner className="mr-1 size-4 text-ember-ink" />}
+        {v.status === "live" && (
+          <Tooltip>
+            <TooltipTrigger render={<button type="button" aria-pressed={v.muted} aria-label={v.muted ? "Unmute" : "Mute"} onClick={() => g.muteVoice(!v.muted)} className={cn("flex size-9 items-center justify-center rounded-full", v.muted ? "bg-ember text-white" : "bg-muted text-foreground/80 hover:text-foreground")} />}>
+              {v.muted ? <MicOffIcon className="size-4" /> : <MicIcon className="size-4" />}
+            </TooltipTrigger>
+            <TooltipContent>{v.muted ? "Unmute" : "Mute your mic"}</TooltipContent>
+          </Tooltip>
+        )}
+        <button type="button" onClick={g.endVoice} className="flex h-9 items-center gap-1.5 rounded-full bg-muted px-3 text-[12.5px] font-medium text-foreground/80 hover:text-foreground" aria-label="Stop talking">
+          <XIcon className="size-4" />
+          <span className="hidden sm:inline">{v.status === "consent" ? "Not now" : "End"}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Level({ value }: { value: number }) {
+  const loud = Math.min(1, value * 9);
+  return (
+    <span className="flex h-6 items-center gap-[3px] pr-1" aria-hidden>
+      {[0.5, 0.8, 1, 0.7, 0.9, 0.6, 0.4].map((k, i) => (
+        <span key={i} className="w-[3px] rounded-full bg-ember transition-[height] duration-100" style={{ height: `${Math.max(4, Math.round(22 * k * (0.15 + loud)))}px` }} />
+      ))}
+    </span>
+  );
+}
+
+/** Our explainer before the browser's prompt (V1): when the mic is on, what's kept, captions. */
+function Consent() {
+  const g = useGuide()!;
+  const li = (Icon: typeof MicIcon, text: string) => (
+    <li className="flex items-start gap-2.5">
+      <Icon className="mt-0.5 size-4 shrink-0 text-ember-ink" aria-hidden />
+      <span>{text}</span>
+    </li>
+  );
+  return (
+    <PanelShell icon={<MicIcon />} title="Talk to X-Ray" onClose={g.endVoice}>
+      <p className="text-[15px] leading-relaxed">Ask out loud, and X-Ray answers out loud while it shows you around the page. Your browser will ask to use your microphone.</p>
+      <ul className="mt-3 space-y-2 text-[14px] leading-relaxed text-foreground/85">
+        {li(CircleDotIcon, "The mic is only on while the bar says Listening. Mute or End any time.")}
+        {li(EyeOffIcon, "Audio is never kept. Only the words are saved, as an Ask X-Ray chat you can read back or delete.")}
+        {li(CaptionsIcon, "Everything X-Ray says is captioned here.")}
+      </ul>
+      <footer className="mt-4 flex flex-wrap items-center gap-2">
+        <Button size="sm" className="h-9 rounded-full px-4" onClick={g.allowVoice}>
+          <MicIcon data-icon="inline-start" />
+          Allow the microphone
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 rounded-full"
+          onClick={() => {
+            g.endVoice();
+            window.dispatchEvent(new CustomEvent("xray:ask", { detail: {} }));
+          }}
+        >
+          Type instead
+        </Button>
+      </footer>
+    </PanelShell>
+  );
+}
+
+/** What was said, both ways, as it's said (V2–V4). */
+function Captions() {
+  const g = useGuide()!;
+  const lines = g.voice.lines.slice(-4);
+  if (!lines.length) return null;
+  return (
+    <section aria-live="polite" aria-label="What’s being said" className="absolute inset-x-0 bottom-full mb-2.5 space-y-2 rounded-[18px] border bg-card p-4 shadow-[0_24px_56px_-22px_rgba(0,0,0,0.38)] sm:p-5">
+      {lines.map((l, i) =>
+        l.who === "you" ? (
+          <p key={i} className="flex gap-2 text-[14px] leading-relaxed text-foreground/75">
+            <span className="shrink-0 text-[12px] font-semibold text-muted-foreground">You</span>
+            {l.text}
+          </p>
+        ) : (
+          <p key={i} className={cn("text-[15.5px] leading-relaxed", i < lines.length - 1 && "text-foreground/60")}>
+            {l.text}
+          </p>
+        ),
+      )}
+    </section>
   );
 }

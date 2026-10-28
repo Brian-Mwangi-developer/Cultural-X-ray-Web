@@ -2,7 +2,11 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { ANCHORS, type Guide, type GuideDo, type GuideEvent, guideApi, type Journey, JOURNEYS, journeyForPath } from "@/lib/guide";
+import { toast } from "sonner";
+import { actionOf } from "@/components/ask/ask-actions";
+import { AppError } from "@/lib/errors";
+import { ANCHORS, type Guide, type GuideDo, type GuideEvent, guideApi, guideDo, type Journey, JOURNEYS, journeyForPath } from "@/lib/guide";
+import { startVoice, type VoiceControls, type VoiceEvent } from "@/lib/voice";
 
 /**
  * The guide's state for one workspace or agency (Figma 19–21): steps from the backend, the journey
@@ -33,8 +37,25 @@ type Ctx = {
   mark: (add: string[], remove?: string[]) => Promise<void>;
   /** The page's first-visit journey, if the person hasn't taken or dismissed it. */
   offer: Journey | null;
+  voice: Voice;
+  talk: () => void;
+  allowVoice: () => void;
+  endVoice: () => void;
+  muteVoice: (on: boolean) => void;
 };
 export type Panel = "none" | "steps" | "news";
+
+/** Talking to X-Ray (Figma 22): the conversation's state, for the bar and its captions. */
+export type Voice = {
+  status: "off" | "consent" | "connecting" | "live";
+  lines: { who: "you" | "xray"; text: string; open: boolean }[];
+  level: number;
+  speaking: boolean;
+  muted: boolean;
+  /** A tool it's using right now ("status", "read_map"), for a quiet "checking…" line. */
+  busy: string | null;
+};
+const VOICE_OFF: Voice = { status: "off", lines: [], level: 0, speaking: false, muted: false, busy: null };
 
 const GuideCtx = createContext<Ctx | null>(null);
 export const useGuide = () => useContext(GuideCtx);
@@ -58,6 +79,8 @@ export function GuideProvider({ orgId, base, kind, children }: { orgId: string; 
   }, []);
   const [panel, setPanel] = useState<Panel>("none");
   const visited = useRef(false);
+  const [voice, setVoice] = useState<Voice>(VOICE_OFF);
+  const controls = useRef<VoiceControls | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -228,12 +251,91 @@ export function GuideProvider({ orgId, base, kind, children }: { orgId: string; 
     return () => window.removeEventListener("keydown", onKey);
   }, [xray, pick, run, panel, stop, setXray]);
 
+  /* ---------------------------------------------------------------- voice */
+
+  const onVoice = useCallback((e: VoiceEvent) => {
+    if (e.type === "level") return setVoice((v) => (Math.abs(v.level - e.value) > 0.01 ? { ...v, level: e.value } : v));
+    if (e.type === "speaking") return setVoice((v) => ({ ...v, speaking: e.on, busy: e.on ? null : v.busy }));
+    if (e.type === "ready") return setVoice((v) => ({ ...v, status: "live" }));
+    if (e.type === "tool") return setVoice((v) => ({ ...v, busy: e.name }));
+    if (e.type === "you" || e.type === "say") {
+      const who = e.type === "you" ? "you" : "xray";
+      return setVoice((v) => {
+        const last = v.lines.at(-1);
+        const lines = last && last.open && last.who === who ? [...v.lines.slice(0, -1), { ...last, text: last.text + e.text }] : [...v.lines.map((l) => ({ ...l, open: false })), { who, text: e.text.trimStart(), open: true }];
+        return { ...v, lines: lines.slice(-8), busy: null } as Voice;
+      });
+    }
+    if (e.type === "turn") return setVoice((v) => ({ ...v, lines: v.lines.map((l) => ({ ...l, open: false })) }));
+    if (e.type === "interrupted") return setVoice((v) => ({ ...v, speaking: false, lines: v.lines.map((l) => (l.who === "xray" && l.open ? { ...l, text: `${l.text}—`, open: false } : l)) }));
+    if (e.type === "do") {
+      const action = actionOf(e.tool, e.input, e.output);
+      if (action) guideDo(action);
+      // What's on screen changes once the page has moved; tell the voice so its next point is right.
+      setTimeout(() => controls.current?.screen(), 1800);
+      return;
+    }
+    if (e.type === "remembered") {
+      const o = (e.output ?? {}) as { kept?: boolean; fact?: string };
+      if (o.kept && o.fact) toast(`Remembered: ${o.fact}`, { description: "See or forget it in Settings › Profile." });
+      return;
+    }
+    if (e.type === "end") {
+      controls.current = null;
+      setVoice(VOICE_OFF);
+      if (e.reason) toast(e.reason);
+    }
+  }, []);
+
+  const connect = useCallback(async () => {
+    setVoice({ ...VOICE_OFF, status: "connecting" });
+    try {
+      controls.current = await startVoice(orgId, onVoice);
+    } catch (error) {
+      setVoice(VOICE_OFF);
+      const blocked = error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError");
+      toast(blocked ? "Your browser blocked the microphone." : error instanceof AppError ? error.message : "Talking isn’t available right now.", {
+        description: blocked ? "Allow it from the icon in the address bar, then try again. Or type to Ask X-Ray." : "You can type to Ask X-Ray instead.",
+      });
+    }
+  }, [orgId, onVoice]);
+
+  const talk = useCallback(() => {
+    if (voice.status !== "off") return;
+    setXray(false);
+    setPanel("none");
+    // Our own explainer comes before the browser's mic prompt, once.
+    if (!guide?.marks.includes("seen:voice")) setVoice({ ...VOICE_OFF, status: "consent" });
+    else void connect();
+  }, [voice.status, guide, connect, setXray]);
+  const allowVoice = useCallback(() => {
+    void mark(["seen:voice"]);
+    void connect();
+  }, [mark, connect]);
+  const endVoice = useCallback(() => {
+    controls.current?.stop();
+    controls.current = null;
+    setVoice(VOICE_OFF);
+  }, []);
+  const muteVoice = useCallback((on: boolean) => {
+    controls.current?.mute(on);
+    setVoice((v) => ({ ...v, muted: on, level: 0 }));
+  }, []);
+
+  // A new page: the voice should know what's on screen now.
+  useEffect(() => {
+    const t = setTimeout(() => controls.current?.screen(), 1200);
+    return () => clearTimeout(t);
+  }, [pathname]);
+  // Leaving the workspace ends the call.
+  useEffect(() => () => controls.current?.stop(), []);
+
   const page = journeyForPath(rest);
   const offer = guide && page && kind === "WORKSPACE" && !guide.marks.includes(`tour:${page.id}`) && !run ? page : null;
 
   const value = useMemo<Ctx>(
-    () => ({ guide, base, kind, rest, run, start, next, back, stop, xray, setXray, pick, setPick, panel, setPanel, mark, offer }),
-    [guide, base, kind, rest, run, start, next, back, stop, xray, setXray, pick, panel, mark, offer],
+    () => ({ guide, base, kind, rest, run, start, next, back, stop, xray, setXray, pick, setPick, panel, setPanel, mark, offer, voice, talk, allowVoice, endVoice, muteVoice }),
+    [guide, base, kind, rest, run, start, next, back, stop, xray, setXray, pick, panel, mark, offer, voice, talk, allowVoice, endVoice, muteVoice],
   );
   return <GuideCtx.Provider value={value}>{children}</GuideCtx.Provider>;
 }
