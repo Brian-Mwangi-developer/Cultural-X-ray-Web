@@ -2,6 +2,7 @@ import { CheckIcon, CreditCardIcon, FileTextIcon } from "lucide-react";
 import { BrandMark, Meta, Panel, SampleBadge } from "@/components/app/parts";
 import { SoonButton } from "@/components/app/soon-button";
 import type { ClientSummary, OrgKind } from "@/lib/session";
+import { count, KIND_WORDS, resetsWords, type Usage } from "@/lib/usage";
 import { SettingsSection } from "./parts";
 
 const PLANS = {
@@ -82,55 +83,53 @@ export function BillingView({ kind, clients = [] }: { kind: OrgKind; clients?: C
   );
 }
 
-export function UsageView({ kind, clients = [] }: { kind: OrgKind; clients?: ClientSummary[] }) {
-  const plan = PLANS[kind];
-  const used = kind === "AGENCY" ? 2140 : 212;
-  const rows =
-    kind === "AGENCY" && clients.length
-      ? clients.filter((c) => c.status === "ACTIVE").map((c, i) => ({ name: c.workspace.name, maps: 2 - (i % 2), queries: [1240, 580, 320][i % 3]! }))
-      : [
-          { name: "Culture Map · first build", maps: 1, queries: 188 },
-          { name: "Ad check · Trailhead 30s", maps: 0, queries: 24 },
-        ];
+/** Settings › Usage: this month's Qloo queries from the ledger, where they went, and when they reset. */
+export function UsageView({ kind, usage }: { kind: OrgKind; usage: Usage }) {
+  const pct = usage.allowance ? Math.min(100, (usage.used / usage.allowance) * 100) : 0;
+  const pooled = !usage.payer.self;
+  const byClient = kind === "AGENCY" || pooled;
+  const rows = byClient ? usage.byWorkspace.map((w) => ({ name: w.name, calls: w.calls })) : usage.byKind.map((k) => ({ name: KIND_WORDS[k.kind], calls: k.calls }));
   return (
     <>
-      <div className="flex justify-end">
-        <SampleBadge />
-      </div>
       <SettingsSection title="This month">
         <div className="rounded-[16px] border bg-card p-6">
-          <div className="flex items-end justify-between">
+          <div className="flex flex-wrap items-end justify-between gap-2">
             <p>
-              <span className="text-[34px] font-semibold tracking-[-0.03em] tabular-nums">{used.toLocaleString("en-US")}</span>
-              <span className="ml-2 text-[15px] text-muted-foreground">of {plan.queries.toLocaleString("en-US")} Qloo queries</span>
+              <span className="text-[34px] font-semibold tracking-[-0.03em] tabular-nums">{count(usage.used)}</span>
+              <span className="ml-2 text-[15px] text-muted-foreground">of {count(usage.allowance)} Qloo queries</span>
             </p>
-            <p className="text-[13px] text-muted-foreground">Resets on 1 November</p>
+            <p className="text-[13px] text-muted-foreground">Resets on {resetsWords(usage.resetsOn)}</p>
           </div>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-soft">
-            <div className="h-full rounded-full bg-ember" style={{ width: `${(used / plan.queries) * 100}%` }} />
+            <div className={usage.used >= usage.allowance ? "h-full rounded-full bg-destructive" : "h-full rounded-full bg-ember"} style={{ width: `${pct}%` }} />
           </div>
-          <p className="mt-3 text-[13px] text-muted-foreground">Cached maps don&rsquo;t count again. Rebuilding a map after 30 days does.</p>
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            {pooled ? `Shared with everything ${usage.payer.name} pays for; this workspace used ${count(usage.ownUsed)}. ` : ""}
+            Each new question to Qloo counts once. Answers we already have are free{usage.cacheHits ? `: ${count(usage.cacheHits)} this month` : ""}.
+          </p>
         </div>
       </SettingsSection>
-      <Panel title={kind === "AGENCY" ? "By client" : "By activity"}>
-        <table className="w-full text-left text-[14px]">
-          <thead className="text-[12.5px] text-muted-foreground">
-            <tr className="border-b">
-              <th className="px-5 py-2.5 font-normal">{kind === "AGENCY" ? "Client" : "What"}</th>
-              <th className="px-3 py-2.5 font-normal">Maps built</th>
-              <th className="px-5 py-2.5 text-right font-normal">Queries</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-soft">
-            {rows.map((r) => (
-              <tr key={r.name}>
-                <td className="px-5 py-[var(--row-y)] font-medium">{r.name}</td>
-                <td className="px-3 tabular-nums">{r.maps}</td>
-                <td className="px-5 text-right font-mono text-[13px] tabular-nums">{r.queries.toLocaleString("en-US")}</td>
+      <Panel title={byClient ? "By workspace" : "By activity"}>
+        {rows.length ? (
+          <table className="w-full text-left text-[14px]">
+            <thead className="text-[12.5px] text-muted-foreground">
+              <tr className="border-b">
+                <th className="px-5 py-2.5 font-normal">{byClient ? "Workspace" : "What"}</th>
+                <th className="px-5 py-2.5 text-right font-normal">Queries</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-soft">
+              {rows.map((r) => (
+                <tr key={r.name}>
+                  <td className="px-5 py-[var(--row-y)] font-medium">{r.name}</td>
+                  <td className="px-5 text-right font-mono text-[13px] tabular-nums">{count(r.calls)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="px-5 py-8 text-center text-[14px] text-muted-foreground">No Qloo queries yet this month.</p>
+        )}
       </Panel>
     </>
   );

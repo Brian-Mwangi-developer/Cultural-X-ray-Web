@@ -4,7 +4,8 @@ import { PageSkeleton } from "@/components/shell/page-skeleton";
 import { SettingsPage } from "@/components/settings/parts";
 import { orgPage } from "@/lib/page-context";
 import { UsageView } from "@/components/settings/billing-usage";
-import { agencyClients } from "@/lib/session";
+import { backendGet } from "@/lib/session";
+import type { Usage } from "@/lib/usage";
 export const metadata: Metadata = { title: "Qloo usage" };
 
 export default function Page({ params }: PageProps<"/[org]/settings/usage">) {
@@ -17,10 +18,10 @@ export default function Page({ params }: PageProps<"/[org]/settings/usage">) {
 
 async function Content({ params }: { params: PageProps<"/[org]/settings/usage">["params"] }) {
   const { org, slug } = await orgPage(params);
-  const clients = org.organization.kind === "AGENCY" ? await agencyClients(org.organization.id) : [];
+  const { usage } = (await backendGet<{ usage: Usage }>(`/api/v1/orgs/${org.organization.id}/usage`))!;
   return (
     <SettingsPage slug={slug} title="Qloo usage" description="Every map and ad check spends Qloo queries. Here’s where they went.">
-      <UsageView kind={org.organization.kind} clients={clients} />
+      <UsageView kind={org.organization.kind} usage={usage} />
     </SettingsPage>
   );
 }

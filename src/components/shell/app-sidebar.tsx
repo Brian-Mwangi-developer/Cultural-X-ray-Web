@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BookmarkIcon, ChevronRightIcon, PlusIcon, SettingsIcon } from "lucide-react";
 import { BrandMark } from "@/components/app/parts";
 import { AddClientDialog } from "@/components/clients/add-client-dialog";
@@ -26,7 +26,9 @@ import {
 import { readIntent, rivalNames, seedNames } from "@/lib/intent";
 import { isManager } from "@/lib/roles";
 import type { ClientSummary, Membership, OrgContext, Preferences } from "@/lib/session";
+import { count, resetsWords, type Usage, usageApi } from "@/lib/usage";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SearchButton } from "./command-menu";
 import { agencyNav, clientNav, isActive, ownerNav, type NavItem } from "./nav";
 import { OrgSwitcher } from "./org-switcher";
@@ -126,7 +128,7 @@ export function AppSidebar({ user, org, memberships, clients }: { user: ShellUse
       </SidebarContent>
 
       <SidebarFooter className="gap-2.5 px-3 pb-3.5">
-        <UsageMeter used={agency ? 2140 : 212} limit={agency ? 10000 : 1000} />
+        <UsageMeter orgId={o.id} pathname={pathname} />
         <div className="flex items-center gap-1.5">
           <div className="min-w-0 flex-1">
             <ProfileMenu user={user} org={{ id: o.id, slug: o.slug, name: o.name, role: org.membership.role }} memberships={memberships} />
@@ -199,20 +201,55 @@ function ClientItem({ agencySlug, client, pathname }: { agencySlug: string; clie
   );
 }
 
-function UsageMeter({ used, limit }: { used: number; limit: number }) {
-  const pct = Math.min(100, Math.round((used / limit) * 100));
+/**
+ * This account's Qloo queries this month, from the ledger. Read again on every navigation, so a map
+ * build or a filtered view shows up as soon as the person moves on.
+ */
+function UsageMeter({ orgId, pathname }: { orgId: string; pathname: string }) {
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [tick, setTick] = useState(0);
+  // Pages that spend queries without navigating (a filtered map view) ask the meter to read again.
+  useEffect(() => {
+    const again = () => setTick((n) => n + 1);
+    window.addEventListener("xray:usage", again);
+    return () => window.removeEventListener("xray:usage", again);
+  }, []);
+  useEffect(() => {
+    let live = true;
+    usageApi
+      .get(orgId)
+      .then(({ usage }) => live && setUsage(usage))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [orgId, pathname, tick]);
+
+  const used = usage?.used ?? 0;
+  const limit = usage?.allowance ?? 0;
+  const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const over = Boolean(usage && used >= limit);
   return (
-    <div className="rounded-[12px] border bg-card px-3 py-2.5" title="Sample figures until Qloo usage is metered">
-      <div className="flex items-center justify-between text-[12.5px]">
-        <span className="text-ember-ink">Qloo queries</span>
-        <span className="tabular-nums">
-          {used.toLocaleString("en-US")} / {limit.toLocaleString("en-US")}
-        </span>
-      </div>
-      <div className="mt-2 h-1 overflow-hidden rounded-full bg-soft" role="progressbar" aria-valuenow={used} aria-valuemin={0} aria-valuemax={limit} aria-label="Qloo queries used this month">
-        <div className="h-full rounded-full bg-ember" style={{ width: `${Math.max(pct, 4)}%` }} />
-      </div>
-      <p className="mt-2 text-[11.5px] text-muted-foreground">Cached maps don&rsquo;t count again.</p>
-    </div>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <div tabIndex={0} className="cursor-help rounded-[12px] border bg-card px-3 py-2.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+            <div className="flex items-center justify-between text-[12.5px]">
+              <span className="text-ember-ink">Qloo queries</span>
+              <span className={cn("tabular-nums", !usage && "text-muted-foreground", over && "font-medium text-destructive")}>{usage ? `${count(used)} / ${count(limit)}` : "…"}</span>
+            </div>
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-soft" role="progressbar" aria-valuenow={used} aria-valuemin={0} aria-valuemax={limit} aria-label="Qloo queries used this month">
+              <div className={cn("h-full rounded-full", over ? "bg-destructive" : "bg-ember")} style={{ width: `${usage ? Math.max(pct, used ? 4 : 0) : 0}%` }} />
+            </div>
+            <p className="mt-2 text-[11.5px] text-muted-foreground">{usage && !usage.payer.self ? `Shared with ${usage.payer.name}` : "Cached answers don’t count again."}</p>
+          </div>
+        }
+      />
+      <TooltipContent side="right" className="max-w-[260px] text-left leading-relaxed">
+        {usage
+          ? `${count(used)} of ${count(limit)} Qloo queries used this month${usage.payer.self ? "" : ` by everyone ${usage.payer.name} pays for`}. Each new question to Qloo counts once; answers we already have are free${usage.cacheHits ? ` (${count(usage.cacheHits)} so far)` : ""}. Resets on ${resetsWords(usage.resetsOn)}.`
+          : "Reading this month’s usage…"}
+      </TooltipContent>
+    </Tooltip>
   );
 }
