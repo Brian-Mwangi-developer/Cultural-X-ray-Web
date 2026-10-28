@@ -24,34 +24,46 @@ export const guideApi = {
  * opened a play). Pages call this; the guide listens. Costs nothing when no journey is running.
  */
 export type GuideEvent = "map.filter" | "ad.uploaded" | "play.open";
+/** The assistant's hands: open a page, ring a part, start a walk-through. The guide carries them out. */
+export type GuideDo = { kind: "go"; path: string } | { kind: "point"; part: string; say: string } | { kind: "walk"; journey: string };
+export const guideDo = (action: GuideDo) => {
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("xray:guide-do", { detail: action }));
+};
+
 export const guideDid = (what: GuideEvent) => {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("xray:guide", { detail: what }));
 };
 
 /**
- * Every part of a page the guide may point at or X-ray. Components put `data-guide="<id>"` on the
+ * Every part of a page the guide may point at or X-ray. `page` is where it lives (relative to the
+ * workspace), so pointing at it can open that page first; null when it's on an ad's own page or
+ * everywhere (the sidebar). Components put `data-guide="<id>"` on the
  * element, and may add `data-guide-say` with a sentence in this brand's own words, which then
  * replaces `body`. Keep ids stable: journeys and, later, the assistant's page cards use them.
  */
-export const ANCHORS: Record<string, { title: string; body: string }> = {
-  "map.compare": { title: "Who you’re compared with", body: "Your rivals on this map. Change them, or add brands to read through; saving rebuilds the map." },
-  "map.read": { title: "The short version", body: "One sentence on the category you’re looking at. It changes with the tab." },
-  "map.tabs": { title: "Categories", body: "Podcasts, films, TV, creators, artists, places, brands and books. Each has its own three piles." },
-  "map.filters": { title: "Narrow it down", body: "By age band, or niche picks only. Each view is read from Qloo once, kept, and counted on your meter." },
-  "map.yours": { title: "Yours", body: "Only your customers have these. The easiest places to stand out." },
-  "map.shared": { title: "Shared", body: "Both sides have these. The bar says whose list each sits higher on." },
-  "map.theirs": { title: "Theirs", body: "Only rivals’ customers have these. Ground you’d have to win." },
-  "overview.read": { title: "X-Ray’s read", body: "Your Culture Map in a few sentences: what your customers love and where they go." },
-  "plays.first": { title: "A play", body: "A move your Culture Map backs, with why. Open it for who to work with and a first message." },
-  "plays.source": { title: "What it rests on", body: "The map item behind the play. Hover it to see where it ranks for your customers and rivals’." },
-  "adcheck.upload": { title: "Drop a draft here", body: "A video up to 60 seconds. It’s read shot by shot against your Culture Map; nothing is posted anywhere." },
-  "adcheck.list": { title: "Ads you’ve checked", body: "Every ad read so far, with what it speaks to and what to fix." },
-  "adcheck.video": { title: "Your ad", body: "Play it here. Findings jump to the moment they’re about." },
-  "adcheck.fit": { title: "Does it sell what you sell?", body: "Checked first: whether the ad shows your product and says your name." },
-  "adcheck.read": { title: "Whose culture it speaks to", body: "The ad’s pull, in your Culture Map’s words: towards your customers, or a rival’s." },
-  "adcheck.before": { title: "Fix before you spend", body: "What would hold it back where it runs: shape, first seconds, sound, and a next step. Each with its evidence." },
-  "sidebar.compare": { title: "Compared with", body: "Rivals and the brands your culture is read through. The + adds more." },
-  "sidebar.usage": { title: "Qloo queries", body: "What this month’s maps and checks have used. Answers already fetched are free." },
+export const ANCHORS: Record<string, { title: string; body: string; page?: string | null }> = {
+  "map.compare": { page: "map", title: "Who you’re compared with", body: "Your rivals on this map. Change them, or add brands to read through; saving rebuilds the map." },
+  "map.read": { page: "map", title: "The short version", body: "One sentence on the category you’re looking at. It changes with the tab." },
+  "map.tabs": { page: "map", title: "Categories", body: "Podcasts, films, TV, creators, artists, places, brands and books. Each has its own three piles." },
+  "map.filters": { page: "map", title: "Narrow it down", body: "By age band, or niche picks only. Each view is read from Qloo once, kept, and counted on your meter." },
+  "map.yours": { page: "map", title: "Yours", body: "Only your customers have these. The easiest places to stand out." },
+  "map.shared": { page: "map", title: "Shared", body: "Both sides have these. The bar says whose list each sits higher on." },
+  "map.theirs": { page: "map", title: "Theirs", body: "Only rivals’ customers have these. Ground you’d have to win." },
+  "overview.read": { page: "", title: "X-Ray’s read", body: "Your Culture Map in a few sentences: what your customers love and where they go." },
+  "plays.first": { page: "plays", title: "A play", body: "A move your Culture Map backs, with why. Open it for who to work with and a first message." },
+  "plays.source": { page: "plays", title: "What it rests on", body: "The map item behind the play. Hover it to see where it ranks for your customers and rivals’." },
+  "adcheck.upload": { page: "ad-check", title: "Drop a draft here", body: "A video up to 60 seconds. It’s read shot by shot against your Culture Map; nothing is posted anywhere." },
+  "adcheck.list": { page: "ad-check", title: "Ads you’ve checked", body: "Every ad read so far, with what it speaks to and what to fix." },
+  "adcheck.video": { page: null, title: "Your ad", body: "Play it here. Findings jump to the moment they’re about." },
+  "adcheck.fit": { page: null, title: "Does it sell what you sell?", body: "Checked first: whether the ad shows your product and says your name." },
+  "adcheck.read": { page: null, title: "Whose culture it speaks to", body: "The ad’s pull, in your Culture Map’s words: towards your customers, or a rival’s." },
+  "adcheck.before": { page: null, title: "Fix before you spend", body: "What would hold it back where it runs: shape, first seconds, sound, and a next step. Each with its evidence." },
+  "audience.read": { page: "audience", title: "Who your customers are, in short", body: "A sentence on the age groups and places your Culture Map says your customers lean to." },
+  "audience.globe": { page: "audience", title: "Where the culture lives", body: "The towns and cities your customers pick, on a globe. Click a city; Open map shows every place." },
+  "audience.who": { page: "audience", title: "Who they are", body: "Age groups and women and men, for you and each rival, in words like “strong” and “weak”." },
+  "audience.places": { page: "audience", title: "Places your customers pick", body: "Ranked, with who else has each one. Good for pop-ups and where to advertise." },
+  "sidebar.compare": { page: null, title: "Compared with", body: "Rivals and the brands your culture is read through. The + adds more." },
+  "sidebar.usage": { page: null, title: "Qloo queries", body: "What this month’s maps and checks have used. Answers already fetched are free." },
 };
 
 export type JourneyStep = {

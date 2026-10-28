@@ -47,7 +47,7 @@ export function AudienceView({ crumbs, brand, data, sample, base, orgId, canBuil
       <PageBody className="space-y-6">
         <PageHeader title="Who each brand reaches, and where" />
         <StandInNote basis={you.readThrough ? { known: false, through: [you.name] } : null} brand={brand} />
-        <section className="relative rounded-[14px] border bg-card px-6 py-5">
+        <section className="relative rounded-[14px] border bg-card px-6 py-5" data-guide="audience.read">
           <span aria-hidden className="absolute top-6 bottom-6 left-0 w-[3px] rounded-r-full bg-ember" />
           <div className="flex items-start justify-between gap-4">
             <p className="max-w-4xl text-[19px] leading-[1.45] font-medium tracking-[-0.01em]">{readOf(data, brand)}</p>
@@ -55,9 +55,14 @@ export function AudienceView({ crumbs, brand, data, sample, base, orgId, canBuil
           </div>
         </section>
 
-        {globe.cities.length > 0 && <AudienceGlobe {...globe} />}
+        {globe.cities.length > 0 && (
+          <div data-guide="audience.globe">
+            <AudienceGlobe {...globe} />
+          </div>
+        )}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <div data-guide="audience.who">
           <Panel title="Who they are" action={<span className="rounded-full border px-2.5 py-0.5 text-[12.5px]">Market {data.market === "GB" ? "UK" : "US"}</span>}>
             {data.hasAudience ? (
               <WideOnly what="The audience grid" className="px-5 py-5">
@@ -112,7 +117,9 @@ export function AudienceView({ crumbs, brand, data, sample, base, orgId, canBuil
               </div>
             )}
           </Panel>
+          </div>
 
+          <div data-guide="audience.places">
           <Panel title={you.readThrough ? `Places ${you.name} customers pick` : "Places your customers pick"}>
             <ul className="divide-y divide-soft">
               {[...onlyYours, ...shared].map((p) => {
@@ -146,6 +153,7 @@ export function AudienceView({ crumbs, brand, data, sample, base, orgId, canBuil
               </div>
             )}
           </Panel>
+          </div>
         </div>
       </PageBody>
     </>
