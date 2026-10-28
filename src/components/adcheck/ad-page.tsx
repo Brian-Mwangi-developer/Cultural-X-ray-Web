@@ -1,5 +1,6 @@
 "use client";
 
+import { type Basis, inWords } from "@/lib/basis";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CircleAlertIcon, EllipsisIcon, LoaderCircleIcon, RotateCwIcon, Trash2Icon, VideoOffIcon } from "lucide-react";
@@ -27,7 +28,7 @@ const POLL_MS = 2000;
  * One ad check: R3 while it's read (polling, paused while the tab is hidden), R4 when it's ready,
  * or what went wrong with a way forward. Delete video and Delete check live in the "…" menu.
  */
-export function AdPage({ orgId, base, trail = [], initial, rivals, canEdit, brand }: { orgId: string; base: string; trail?: Crumb[]; initial: AdDetail; rivals: string[]; canEdit: boolean; brand: string }) {
+export function AdPage({ orgId, base, trail = [], initial, rivals, canEdit, brand, basis = null, viaAgency = false }: { orgId: string; base: string; trail?: Crumb[]; initial: AdDetail; rivals: string[]; canEdit: boolean; brand: string; basis?: Basis | null; viaAgency?: boolean }) {
   const router = useRouter();
   const [ad, setAd] = useState(initial);
   const [confirm, setConfirm] = useState<"video" | "check" | null>(null);
@@ -121,7 +122,7 @@ export function AdPage({ orgId, base, trail = [], initial, rivals, canEdit, bran
           <Failed ad={ad} canEdit={canEdit} busy={busy} onRetry={retry} onDelete={() => setConfirm("check")} />
         ) : (
           <div className="mx-auto max-w-[1180px]">
-            <VerdictView orgId={orgId} base={base} ad={ad} rivals={rivals} onRecut={canEdit ? writeRecuts : undefined} brand={brand} />
+            <VerdictView orgId={orgId} base={base} ad={ad} rivals={rivals} onRecut={canEdit ? writeRecuts : undefined} brand={brand} say={(t: string) => inWords(t, basis, brand, viaAgency)} />
           </div>
         )}
       </PageBody>

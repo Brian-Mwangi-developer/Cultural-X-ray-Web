@@ -50,9 +50,12 @@ export type Verdict = {
   /** Does the ad show what the business sells? Absent on checks made before it (backend adcheck.fit.ts). */
   fit?: Fit;
 };
+/** What would hold the ad back where it runs (backend adcheck.craft.ts). */
+export type Finding = { id: string; level: "fix" | "consider"; title: string; why: string; how: string; evidence: string[] };
 export type Fit = {
   adShows: string;
   fits: "yes" | "partly" | "no";
+  productFirstShot?: number;
   otherBrands: string[];
   nameShown: boolean;
   message: "clear" | "vague" | "missing";
@@ -64,6 +67,7 @@ export type AdDetail = Omit<AdSummary, "lean" | "rival" | "headline"> & {
   shots: AdShot[];
   elements: AdElement[];
   check: { id: string; mapId: string; verdict: Verdict; createdAt: string; recuts: Recut[] } | null;
+  craft: Finding[];
 };
 
 export const PLACEMENTS = [

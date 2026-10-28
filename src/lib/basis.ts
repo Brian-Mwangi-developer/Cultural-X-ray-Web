@@ -53,5 +53,6 @@ export function inWords(text: string, b: Basis | null | undefined, brand: string
     .replace(/\byour customers\b/gi, who)
     .replace(/\bthan yours\b/gi, look ? "than theirs" : `than ${possessive(brand)}`)
     .replace(/\byour way\b/gi, look ? "toward brands like yours" : `${possessive(brand)} way`)
+    .replace(/\btoward you\b/gi, look ? "toward brands like yours" : `toward ${brand}`)
     .replace(/\bonly yours\b/gi, look ? "open to you" : `only ${possessive(brand)}`);
 }

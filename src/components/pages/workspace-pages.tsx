@@ -107,8 +107,8 @@ export async function AdCheckPage({ view }: { view: WorkspaceView }) {
 }
 
 export async function AdCheckDetailPage({ view, adId }: { view: WorkspaceView; adId: string }) {
-  const { ad } = (await backendGet<{ ad: AdDetail }>(api(view, `/ads/${encodeURIComponent(adId)}`)))!;
-  return <AdPage key={ad.id} orgId={view.orgId} base={view.base} trail={view.crumbs()} initial={ad} rivals={view.rivals} canEdit={view.canWork} brand={view.brand} />;
+  const { ad, basis } = (await backendGet<{ ad: AdDetail; basis: Basis | null }>(api(view, `/ads/${encodeURIComponent(adId)}`)))!;
+  return <AdPage key={ad.id} orgId={view.orgId} base={view.base} trail={view.crumbs()} initial={ad} rivals={view.rivals} canEdit={view.canWork} brand={view.brand} basis={basis} viaAgency={view.viaAgency} />;
 }
 
 /** R5: the suggested re-cuts of a read ad. Without any yet, back to the read (which can write them). */

@@ -11,13 +11,14 @@ import { useFrames } from "@/components/adcheck/frames";
 import { OverlayChip, Player, type PlayerHandle } from "@/components/adcheck/player";
 import { recutHref } from "@/lib/recut";
 import { FitCard, needsFix } from "@/components/adcheck/fit-card";
+import { CraftPanel } from "@/components/adcheck/craft-panel";
 import { type AdDetail, type AdElement, type AdShot, ago, clock, leanWord, seconds, sentence, shotName, shotWords, territoryOfLabel, type Verdict, videoUrl } from "@/lib/ads";
 import { cn } from "@/lib/utils";
 
 const TERRITORY_WORD: Record<Territory, string> = { yours: "Leans your way", contested: "Shared", theirs: "Leans to a rival" };
 
 /** R4: what the ad is, shot by shot, and X-Ray's read of it, with the reasons beside it. */
-export function VerdictView({ orgId, base, ad, rivals, onRecut, brand }: { orgId: string; base: string; ad: AdDetail; rivals: string[]; onRecut?: () => void; brand: string }) {
+export function VerdictView({ orgId, base, ad, rivals, onRecut, brand, say = (t) => t }: { orgId: string; base: string; ad: AdDetail; rivals: string[]; onRecut?: () => void; brand: string; say?: (text: string) => string }) {
   const recutState: RecutState = {
     href: ad.check?.recuts.length ? recutHref(base, ad.id) : null,
     writing: ad.stage === "writing re-cuts",
@@ -51,7 +52,7 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut, brand }: { orgId
         {/* Narrower than two columns, the read comes first: it's the answer. The reasons stay below. */}
         <div className="space-y-4 xl:hidden">
           {fitCard}
-          <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} />
+          <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} say={say} />
         </div>
 
         {src ? (
@@ -85,8 +86,9 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut, brand }: { orgId
       <aside className="min-w-0 space-y-4">
         <div className="hidden space-y-4 xl:block">
           {fitCard}
-          <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} />
+          <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} say={say} />
         </div>
+        <CraftPanel findings={ad.craft ?? []} width={ad.width} height={ad.height} />
         {verdict && <Reasons verdict={verdict} shots={ad.shots} onSeek={src ? seek : undefined} />}
       </aside>
     </div>
@@ -97,7 +99,7 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut, brand }: { orgId
 
 type RecutState = { href: string | null; writing: boolean; onWrite?: () => void };
 
-function ReadCard({ verdict, base, recut, brand }: { verdict: Verdict | null; base: string; recut: RecutState; brand: string }) {
+function ReadCard({ verdict, base, recut, brand, say }: { verdict: Verdict | null; base: string; recut: RecutState; brand: string; say: (text: string) => string }) {
   const wrongProduct = verdict?.fit?.fits === "no";
   // Checks made before the fit check: asking for re-cuts runs it first.
   const unchecked = Boolean(verdict && !verdict.fit);
@@ -142,7 +144,7 @@ function ReadCard({ verdict, base, recut, brand }: { verdict: Verdict | null; ba
         )
       }
     >
-      <p>{noMap ? "Build your Culture Map to see whose culture this ad speaks to. The shots and words are already read." : verdict.headline}</p>
+      <p>{noMap ? "Build your Culture Map to see whose culture this ad speaks to. The shots and words are already read." : say(verdict.headline)}</p>
     </XRayRead>
   );
 }
