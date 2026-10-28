@@ -61,7 +61,11 @@ export function AdCheckHome({ orgId, base, trail = [], initial, rivals, canCreat
             <p className="rounded-[14px] border border-dashed bg-muted/40 px-6 py-8 text-center text-[14px] text-muted-foreground">No ads have been checked yet. Owners, admins and strategists can upload one.</p>
           ) : null}
 
-          {!empty && <AdList ads={initial} base={base} />}
+          {!empty && (
+            <div data-guide="adcheck.list">
+              <AdList ads={initial} base={base} />
+            </div>
+          )}
           {empty && <WhatYouGet rivals={rivals} />}
 
           <p className="flex items-center gap-2 text-[12.5px] text-faint">
@@ -132,6 +136,7 @@ function DropZone({ onPick, compact }: { onPick: (p: Picked) => void; compact: b
   return (
     <section
       aria-label="Upload an ad"
+      data-guide="adcheck.upload"
       onDragEnter={(e) => {
         e.preventDefault();
         depth.current++;

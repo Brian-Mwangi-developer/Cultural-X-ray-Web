@@ -16,6 +16,7 @@ import { ads, megabytes, PLACEMENTS, type Placement, seconds } from "@/lib/ads";
 import { userMessage } from "@/lib/errors";
 import { reportError } from "@/lib/report";
 import { cn } from "@/lib/utils";
+import { guideDid } from "@/lib/guide";
 
 type Phase = { kind: "uploading"; loaded: number } | { kind: "uploaded"; pathname: string } | { kind: "failed"; message: string };
 
@@ -75,7 +76,10 @@ export function Upload({ orgId, base, trail = [], picked, rivals, onCancel }: { 
     setStarting(true);
     ads
       .start(orgId, id, { pathname: phase.pathname, placements })
-      .then(() => router.push(`${base}/ad-check/${id}`))
+      .then(() => {
+        guideDid("ad.uploaded");
+        router.push(`${base}/ad-check/${id}`);
+      })
       .catch((error: unknown) => {
         reportError(error, { where: "adcheck.start" });
         toast.error(userMessage(error));

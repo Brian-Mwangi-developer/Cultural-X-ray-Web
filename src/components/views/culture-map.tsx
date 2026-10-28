@@ -22,6 +22,7 @@ import { type Basis, inWords, lookalike, type Words, wordsFor } from "@/lib/basi
 import { StandInNote } from "@/components/app/stand-in-note";
 import { type AgeKey, AGES, builtWords, type Kind, kindOf, KINDS, leanWords, ordinal, territory, type TerritoryItem, type TerritoryView, type Tier, TIERS, whyHere } from "@/lib/territory";
 import { cn } from "@/lib/utils";
+import { guideDid } from "@/lib/guide";
 
 type View = NonNullable<TerritoryView["view"]>;
 type MapMeta = NonNullable<TerritoryView["map"]>;
@@ -93,6 +94,7 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
     setSegment(v.segment);
     setTier(v.tier);
     void load(v);
+    if (v.segment !== segment || v.tier !== tier) guideDid("map.filter");
   }
 
   async function rebuild() {
@@ -135,7 +137,7 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
       />
       <PageBody className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-3" data-guide="map.compare" data-guide-say={rivals.length ? `Compared with ${rivals.join(", ")}. Change them, or add brands to read through; saving rebuilds the map.` : undefined}>
             <h1 className="text-[32px] leading-none font-semibold tracking-[-0.03em] lg:text-[36px]">{brand}</h1>
             {rivals.length > 0 && <span className="text-[20px] text-muted-foreground">vs</span>}
             {rivals.map((r) => (
@@ -161,12 +163,14 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
 
         <StandInNote basis={basis} brand={brand} />
 
+        <div data-guide="map.read">
         <XRayRead compact of={look ? `of ${k.noun}` : `of ${viaAgency ? `${possessive(brand)} ` : "your "}${k.noun}`} aside={<Evidence tip={`From the Qloo lists of what ${whose} customers and each rival’s customers ${k.verb}.`}>Qloo · {k.label}</Evidence>}>
           <p>{reading ?? (view.status === "ready" ? `Qloo has nothing for ${k.noun} under these filters.` : `Reading ${k.noun}${filterWords ? ` for ${filterWords}` : ""}…`)}</p>
         </XRayRead>
+        </div>
 
         <div className="flex flex-wrap items-end justify-between gap-3 border-b">
-          <div role="tablist" aria-label="Category" className="-mb-px flex max-w-full gap-1 overflow-x-auto">
+          <div role="tablist" aria-label="Category" data-guide="map.tabs" className="-mb-px flex max-w-full gap-1 overflow-x-auto">
             {KINDS.map((x) => {
               const n = (filtered ? counts[x.kind] : baseCounts[x.kind]) as View["counts"][Kind];
               return (
@@ -183,7 +187,7 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
               );
             })}
           </div>
-          <div className="flex items-center gap-2 pb-2">
+          <div className="flex items-center gap-2 pb-2" data-guide="map.filters">
             <Filter
               label="Age"
               help={`Shows what ${whose} customers in this age band, and rivals’ customers in the same band, ${k.verb}. Each band is a separate Qloo view, built the first time someone asks and kept.`}
@@ -292,6 +296,17 @@ function Filter({ label, help, value, options, onChange }: { label: string; help
   );
 }
 
+const GUIDE_PART = { YOURS: "map.yours", CONTESTED: "map.shared", THEIRS: "map.theirs" } as const;
+
+/** X-ray's sentence for a column, about what's actually in it. */
+function guideSay(label: TerritoryItem["label"], items: TerritoryItem[], who: string) {
+  const top = items[0]?.name;
+  if (!top) return undefined;
+  if (label === "YOURS") return `Only ${who} have these, and no rival’s customers do. ${top} is the top one.`;
+  if (label === "CONTESTED") return `Both sides have these. The bar says whose list each sits higher on; ${top} is first here.`;
+  return `Only rivals’ customers have these, led by ${top}. Ground you’d have to win.`;
+}
+
 function Column({ label, items, brand, words, rivals, noun, one, selected, onSelect }: {
   label: TerritoryItem["label"];
   items: TerritoryItem[];
@@ -312,7 +327,7 @@ function Column({ label, items, brand, words, rivals, noun, one, selected, onSel
     THEIRS: { title: "Theirs", sub: `${others} only`, help: `Only a rival’s customers rank it; ${words.who} don’t. Their ground: useful to know, risky to borrow.` },
   }[label];
   return (
-    <section className="@container rounded-[14px] border bg-card p-3" aria-label={copy.title}>
+    <section className="@container rounded-[14px] border bg-card p-3" aria-label={copy.title} data-guide={GUIDE_PART[label]} data-guide-say={guideSay(label, items, words.who)}>
       <header className="flex items-center justify-between px-2 pt-1.5 pb-1">
         <h2 className="flex items-center gap-2 text-[16px] font-medium">
           <TerritoryGlyph kind={TERRITORY[label]} className="size-3" decorative />

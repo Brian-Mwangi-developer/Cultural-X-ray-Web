@@ -32,7 +32,11 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut, brand, say = (t)
   const shotAt = (ms: number) => ad.shots.find((s) => ms >= s.startMs && ms < s.endMs) ?? ad.shots.at(-1);
   const current = shotAt(time);
   const verdict = ad.check?.verdict ?? null;
-  const fitCard = needsFix(verdict?.fit) ? <FitCard fit={verdict.fit} brand={brand} /> : null;
+  const fitCard = needsFix(verdict?.fit) ? (
+    <div data-guide="adcheck.fit">
+      <FitCard fit={verdict.fit} brand={brand} />
+    </div>
+  ) : null;
 
   const meta = [
     seconds(ad.durationMs),
@@ -52,10 +56,13 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut, brand, say = (t)
         {/* Narrower than two columns, the read comes first: it's the answer. The reasons stay below. */}
         <div className="space-y-4 xl:hidden">
           {fitCard}
-          <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} say={say} />
+          <div data-guide="adcheck.read">
+            <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} say={say} />
+          </div>
         </div>
 
         {src ? (
+          <div data-guide="adcheck.video">
           <Player
             ref={player}
             src={src}
@@ -68,6 +75,7 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut, brand, say = (t)
               ) : null
             }
           />
+          </div>
         ) : (
           <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed bg-muted/50 text-center">
             <VideoOffIcon className="size-5 text-muted-foreground" strokeWidth={1.75} aria-hidden />
@@ -86,9 +94,13 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut, brand, say = (t)
       <aside className="min-w-0 space-y-4">
         <div className="hidden space-y-4 xl:block">
           {fitCard}
-          <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} say={say} />
+          <div data-guide="adcheck.read">
+            <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} say={say} />
+          </div>
         </div>
-        <CraftPanel findings={ad.craft ?? []} width={ad.width} height={ad.height} />
+        <div data-guide="adcheck.before">
+          <CraftPanel findings={ad.craft ?? []} width={ad.width} height={ad.height} />
+        </div>
         {verdict && <Reasons verdict={verdict} shots={ad.shots} onSeek={src ? seek : undefined} />}
       </aside>
     </div>

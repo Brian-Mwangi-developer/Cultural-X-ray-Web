@@ -13,6 +13,7 @@ import { AppError } from "@/lib/errors";
 import { StandInNote } from "@/components/app/stand-in-note";
 import { type Basis, inWords, wordsFor } from "@/lib/basis";
 import { GROUPS, KIND_WORD, type Play, type PlayKind, playHref, plays as playsApi, type PlaysList as Data, territoryOf } from "@/lib/plays";
+import { guideDid } from "@/lib/guide";
 import { cn } from "@/lib/utils";
 
 const ICON: Record<PlayKind, LucideIcon> = { CREATOR: UserRoundIcon, PODCAST: MicIcon, SHOW: TvIcon, PLACE: MapPinIcon, SOUND: MusicIcon, ARTIST: MusicIcon, PARTNER: ShoppingBagIcon, AESTHETIC: SparklesIcon, PRICE: BookOpenIcon };
@@ -127,13 +128,13 @@ function PlayRow({ play, base, lead, brand, viaAgency, basis }: { play: Play; ba
   const Icon = ICON[play.kind];
   const first = play.items?.[0];
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-5">
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-5" data-guide={lead ? "plays.first" : undefined} data-guide-say={lead && play.why ? `${play.title}: ${inWords(play.why, basis, brand, viaAgency)}` : undefined}>
       <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-full border", lead && "bg-ember-soft")}>
         <Icon className={cn("size-[17px]", lead ? "text-ember-ink" : "text-foreground/75")} strokeWidth={1.75} aria-hidden />
       </span>
       <div className="min-w-0 flex-1 basis-[260px]">
         <p className="text-[11px] font-medium tracking-[0.1em] text-muted-foreground uppercase">{KIND_WORD[play.kind]}</p>
-        <Link href={playHref(base, play.id)} className="mt-0.5 block text-[16px] font-medium hover:underline">
+        <Link href={playHref(base, play.id)} onClick={() => guideDid("play.open")} className="mt-0.5 block text-[16px] font-medium hover:underline">
           {play.title}
         </Link>
         {play.why && (
@@ -145,11 +146,13 @@ function PlayRow({ play, base, lead, brand, viaAgency, basis }: { play: Play; ba
       </div>
       <div className="flex shrink-0 items-center gap-3">
         {first && (
-          <Evidence always tip={inWords(first.proof, basis, brand, viaAgency)} className="hidden max-w-[260px] md:inline-flex">
-            {first.label === "YOURS" ? wordsFor(basis, brand, viaAgency).ownChip : `Shared with ${first.rival ?? "a rival"}`} · {first.name}
-          </Evidence>
+          <span data-guide={lead ? "plays.source" : undefined} data-guide-say={lead ? inWords(first.proof, basis, brand, viaAgency) : undefined} className="hidden md:inline-flex">
+            <Evidence always tip={inWords(first.proof, basis, brand, viaAgency)} className="max-w-[260px]">
+              {first.label === "YOURS" ? wordsFor(basis, brand, viaAgency).ownChip : `Shared with ${first.rival ?? "a rival"}`} · {first.name}
+            </Evidence>
+          </span>
         )}
-        <Link href={playHref(base, play.id)} className={buttonVariants({ variant: lead ? "default" : "outline", size: "pill" })}>
+        <Link href={playHref(base, play.id)} onClick={() => guideDid("play.open")} className={buttonVariants({ variant: lead ? "default" : "outline", size: "pill" })}>
           Open play
           <ArrowRightIcon data-icon="inline-end" />
         </Link>

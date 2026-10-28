@@ -108,7 +108,7 @@ export function AppSidebar({ user, org, memberships, clients }: { user: ShellUse
             </SidebarGroup>
           </>
         ) : (
-          <SidebarGroup>
+          <SidebarGroup data-guide="sidebar.compare">
             <div className="flex items-center pr-1">
               <SidebarGroupLabel className={cn(labelClass, "flex-1")}>Compared with</SidebarGroupLabel>
               {canWork(org.membership.role) && (
@@ -150,7 +150,9 @@ export function AppSidebar({ user, org, memberships, clients }: { user: ShellUse
       </SidebarContent>
 
       <SidebarFooter className="gap-2.5 px-3 pb-3.5">
-        <UsageMeter orgId={o.id} pathname={pathname} />
+        <div data-guide="sidebar.usage">
+          <UsageMeter orgId={o.id} pathname={pathname} />
+        </div>
         <div className="flex items-center gap-1.5">
           <div className="min-w-0 flex-1">
             <ProfileMenu user={user} org={{ id: o.id, slug: o.slug, name: o.name, role: org.membership.role }} memberships={memberships} />

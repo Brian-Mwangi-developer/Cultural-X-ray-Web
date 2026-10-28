@@ -168,6 +168,7 @@ export function OverviewView({
           </header>
 
           <StandInNote basis={basis} brand={brand} className="mb-4" />
+          <div data-guide="overview.read">
           <XRayRead
             of={viaAgency ? `of ${possessive(brand)} Culture Map` : "of your Culture Map"}
             aside={
@@ -207,6 +208,7 @@ export function OverviewView({
             <p>{say(read.sentence)}</p>
             {map.thinData && <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">Qloo knows less about this brand than most, so some lists are short. Adding a brand your customers also buy will fill it out.</p>}
           </XRayRead>
+          </div>
         </div>
 
         {/* Where the culture lives comes first; Google Maps will sit beside it as another view. */}
