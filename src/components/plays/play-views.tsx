@@ -5,13 +5,17 @@ import { XRayRead } from "@/components/app/xray-read";
 import { CopyButton } from "@/components/plays/embeds";
 import { type Crumb, PageBody, TopBar } from "@/components/shell/top-bar";
 import { buttonVariants } from "@/components/ui/button";
-import { type Creator, creatorHref, creatorsHref, forViewer, KIND_WORD, leanWords, type Play, playHref, subscriberWords, territoryOf, youtubeThumb } from "@/lib/plays";
+import { StandInNote } from "@/components/app/stand-in-note";
+import { type Basis, inWords, wordsFor } from "@/lib/basis";
+import { type Creator, creatorHref, creatorsHref, KIND_WORD, type Play, playHref, subscriberWords, territoryOf, youtubeThumb } from "@/lib/plays";
 import { cn } from "@/lib/utils";
 
 /* =============================================================== P2 · a play */
 
-export function PlayView({ base, trail, play, creators, brand, viaAgency }: { base: string; trail: Crumb[]; play: Play; creators: Creator[]; brand: string; viaAgency: boolean }) {
+export function PlayView({ base, trail, play, creators, brand, viaAgency, basis }: { base: string; trail: Crumb[]; play: Play; creators: Creator[]; brand: string; viaAgency: boolean; basis: Basis | null }) {
   const items = play.items ?? [];
+  const words = wordsFor(basis, brand, viaAgency);
+  const say = (t: string) => inWords(t, basis, brand, viaAgency);
   const isCreator = play.kind === "CREATOR";
   const whose = viaAgency ? `${brand}’s` : "your";
   return (
@@ -29,7 +33,8 @@ export function PlayView({ base, trail, play, creators, brand, viaAgency }: { ba
       />
       <PageBody>
         <div className="mx-auto max-w-[1180px] space-y-7">
-          <PageHeader eyebrow={`${KIND_WORD[play.kind]} play`} title={play.title} description={play.rationale} />
+          <PageHeader eyebrow={`${KIND_WORD[play.kind]} play`} title={play.title} description={say(play.rationale)} />
+          <StandInNote basis={basis} brand={brand} />
           <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="min-w-0 space-y-6">
               <Panel title="Why this play" action={`From ${whose} Culture Map`}>
@@ -38,9 +43,9 @@ export function PlayView({ base, trail, play, creators, brand, viaAgency }: { ba
                     <div key={i.entityId} className="flex gap-3 px-[18px] py-3.5">
                       <TerritoryGlyph kind={territoryOf(i.label)} decorative className="mt-[5px] shrink-0" />
                       <div className="min-w-0 space-y-2">
-                        <p className="text-[14px] leading-relaxed">{forViewer(i.proof, brand, viaAgency)}</p>
-                        <Evidence always tip={`From Qloo: who ${whose === "your" ? "your" : `${brand}’s`} customers rank, compared with your rivals’ customers.`}>
-                          {leanWords(i.label, i.rival, viaAgency ? brand : undefined)} · {i.name}
+                        <p className="text-[14px] leading-relaxed">{say(i.proof)}</p>
+                        <Evidence always tip={`From Qloo: what ${words.who} rank, compared with rivals’ customers.`}>
+                          {i.label === "YOURS" ? words.ownChip : `Shared with ${i.rival ?? "a rival"}`} · {i.name}
                         </Evidence>
                       </div>
                     </div>
@@ -77,7 +82,7 @@ export function PlayView({ base, trail, play, creators, brand, viaAgency }: { ba
                           <Face creator={c} size={28} />
                           <span className="min-w-0">
                             <span className="block truncate text-[13.5px] font-medium">{c.name}</span>
-                            <span className="block truncate text-[12px] text-muted-foreground">{subscriberWords(c.youtube?.subscribers ?? null) ?? c.description ?? leanWords(c.label, c.rival, viaAgency ? brand : undefined)}</span>
+                            <span className="block truncate text-[12px] text-muted-foreground">{subscriberWords(c.youtube?.subscribers ?? null) ?? c.description ?? (c.label === "YOURS" ? words.ownChip : `Shared with ${c.rival ?? "a rival"}`)}</span>
                           </span>
                         </span>
                       </Link>
@@ -88,8 +93,8 @@ export function PlayView({ base, trail, play, creators, brand, viaAgency }: { ba
             </div>
 
             <aside className="min-w-0 space-y-4">
-              <XRayRead compact aside={items[0] ? <Lean label={items[0].label} rival={items[0].rival} brand={viaAgency ? brand : undefined} /> : null}>
-                <p>{play.why ?? play.rationale}</p>
+              <XRayRead compact aside={items[0] ? <Lean label={items[0].label} rival={items[0].rival} own={words.ownChip} /> : null}>
+                <p>{say(play.why ?? play.rationale)}</p>
               </XRayRead>
               {isCreator && (
                 <section className="rounded-[14px] border bg-muted/50 p-4">
@@ -121,8 +126,9 @@ export function PlayView({ base, trail, play, creators, brand, viaAgency }: { ba
 
 /* =============================================================== P3 · creators */
 
-export function CreatorsView({ base, trail, play, creators, checking, brand, viaAgency }: { base: string; trail: Crumb[]; play: Play | null; creators: Creator[]; checking: boolean; brand: string; viaAgency: boolean }) {
+export function CreatorsView({ base, trail, play, creators, checking, brand, viaAgency, basis }: { base: string; trail: Crumb[]; play: Play | null; creators: Creator[]; checking: boolean; brand: string; viaAgency: boolean; basis: Basis | null }) {
   const whose = viaAgency ? `${brand}’s` : "your";
+  const words = wordsFor(basis, brand, viaAgency);
   return (
     <>
       <TopBar crumbs={[...trail, { label: "Plays", href: `${base}/plays` }, ...(play ? [{ label: play.title, href: playHref(base, play.id) }] : []), { label: "Creators" }]} />
@@ -131,8 +137,9 @@ export function CreatorsView({ base, trail, play, creators, checking, brand, via
           <PageHeader
             eyebrow={play?.title ?? "Creators"}
             title={play ? "Creators for this play" : "Creators"}
-            description={`People ${whose} customers follow, from the Culture Map: ${viaAgency ? `only ${whose}` : "only yours"} first. Their latest videos come straight from their public channels.`}
+            description={`People ${words.who} follow, from the Culture Map: ${words.ownChip.toLowerCase()} first. Their latest videos come straight from their public channels.`}
           />
+          <StandInNote basis={basis} brand={brand} />
           {checking && (
             <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
               <SparklesIcon className="size-3.5" aria-hidden />
@@ -142,7 +149,7 @@ export function CreatorsView({ base, trail, play, creators, checking, brand, via
           {creators.length ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {creators.map((c, i) => (
-                <CreatorCard key={c.entityId} creator={c} href={creatorHref(base, c.entityId, play?.id)} lead={i === 0} brand={viaAgency ? brand : undefined} />
+                <CreatorCard key={c.entityId} creator={c} href={creatorHref(base, c.entityId, play?.id)} lead={i === 0} own={words.ownChip} />
               ))}
             </div>
           ) : (
@@ -155,7 +162,7 @@ export function CreatorsView({ base, trail, play, creators, checking, brand, via
   );
 }
 
-function CreatorCard({ creator: c, href, lead, brand }: { creator: Creator; href: string; lead: boolean; brand?: string }) {
+function CreatorCard({ creator: c, href, lead, own }: { creator: Creator; href: string; lead: boolean; own: string }) {
   const handle = c.youtube?.handle ?? c.tiktok?.handle ?? c.instagram;
   return (
     <article className={cn("flex flex-col gap-3 rounded-[14px] border bg-card p-4", lead && "border-ember/60")}>
@@ -170,7 +177,7 @@ function CreatorCard({ creator: c, href, lead, brand }: { creator: Creator; href
         {handle && <CopyButton text={`@${handle}`} label="Copy handle" done="Handle copied" iconOnly />}
       </div>
       <div className="flex items-center justify-between gap-3 text-[12.5px]">
-        <Lean label={c.label} rival={c.rival} brand={brand} />
+        <Lean label={c.label} rival={c.rival} own={own} />
         <span className="truncate text-muted-foreground">{subscriberWords(c.youtube?.subscribers ?? null) ?? ""}</span>
       </div>
       {c.videos.length ? (
@@ -220,11 +227,12 @@ export function Platform({ name, href }: { name: "YouTube" | "TikTok" | "Instagr
   );
 }
 
-export function Lean({ label, rival, brand }: { label: Creator["label"]; rival: string | null; brand?: string }) {
+/** Where a person or item sits: `own` is what this side’s ground is called ("Only yours", "Open to you"). */
+export function Lean({ label, rival, own = "Only yours" }: { label: Creator["label"]; rival: string | null; own?: string }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 text-[12.5px] font-medium">
       <TerritoryGlyph kind={territoryOf(label)} decorative />
-      <span className="truncate">{leanWords(label, rival, brand)}</span>
+      <span className="truncate">{label === "YOURS" ? own : label === "CONTESTED" ? `Shared with ${rival ?? "a rival"}` : `${rival ?? "A rival"}’s`}</span>
     </span>
   );
 }

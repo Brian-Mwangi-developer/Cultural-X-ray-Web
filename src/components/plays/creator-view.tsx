@@ -7,6 +7,7 @@ import { Evidence, Panel, PanelRows } from "@/components/app/parts";
 import { XRayRead } from "@/components/app/xray-read";
 import { CopyButton, TikTokProfile, YouTubeEmbed } from "@/components/plays/embeds";
 import { Face, Lean, Platform } from "@/components/plays/play-views";
+import { type Basis, inWords, wordsFor } from "@/lib/basis";
 import { type Crumb, PageBody, TopBar } from "@/components/shell/top-bar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,13 +16,13 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { AppError } from "@/lib/errors";
 import {
-  ago, type Creator, creatorsHref, facebookSearch, forViewer, instagramProfile, leanWords, type Play, playHref, plays, subscriberWords, tiktokProfile, tiktokSearch, viewsWords, youtubeChannel, youtubeSearch, youtubeThumb, youtubeWatch,
+  ago, type Creator, creatorsHref, facebookSearch, instagramProfile, type Play, playHref, plays, subscriberWords, tiktokProfile, tiktokSearch, viewsWords, youtubeChannel, youtubeSearch, youtubeThumb, youtubeWatch,
 } from "@/lib/plays";
 
 /** P4: a creator's own content first (each platform's embed), why they fit, and a draft to reach out. */
-export function CreatorView({ orgId, base, trail, creator: c, play, canWork, brand, viaAgency }: { orgId: string; base: string; trail: Crumb[]; creator: Creator; play: Play | null; canWork: boolean; brand: string; viaAgency: boolean }) {
-  const who = viaAgency ? brand : undefined;
-  const proof = forViewer(c.proof, brand, viaAgency);
+export function CreatorView({ orgId, base, trail, creator: c, play, canWork, brand, viaAgency, basis }: { orgId: string; base: string; trail: Crumb[]; creator: Creator; play: Play | null; canWork: boolean; brand: string; viaAgency: boolean; basis: Basis | null }) {
+  const words = wordsFor(basis, brand, viaAgency);
+  const proof = inWords(c.proof, basis, brand, viaAgency);
   const [video, setVideo] = useState(c.videos[0] ?? null);
   const [draftOpen, setDraftOpen] = useState(false);
   const [draft, setDraft] = useState<{ subject: string; message: string } | null>(null);
@@ -121,7 +122,7 @@ export function CreatorView({ orgId, base, trail, creator: c, play, canWork, bra
             </div>
 
             <aside className="min-w-0 space-y-4">
-              <XRayRead compact aside={<Lean label={c.label} rival={c.rival} brand={who} />} basedOn={<Evidence always tip={proof}>{leanWords(c.label, c.rival, who)} · Creators</Evidence>}>
+              <XRayRead compact aside={<Lean label={c.label} rival={c.rival} own={words.ownChip} />} basedOn={<Evidence always tip={proof}>{c.label === "YOURS" ? words.ownChip : `Shared with ${c.rival ?? "a rival"}`} · Creators</Evidence>}>
                 <p>{proof}</p>
               </XRayRead>
 

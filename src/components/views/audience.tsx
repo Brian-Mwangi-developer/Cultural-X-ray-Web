@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StandInNote } from "@/components/app/stand-in-note";
 import { DownloadIcon, InfoIcon, MapPinIcon } from "lucide-react";
 import { Evidence, PageHeader, Panel, SampleBadge, TerritoryGlyph, WideOnly } from "@/components/app/parts";
 import { SoonButton } from "@/components/app/soon-button";
@@ -45,6 +46,7 @@ export function AudienceView({ crumbs, brand, data, sample, base, orgId, canBuil
       />
       <PageBody className="space-y-6">
         <PageHeader title="Who each brand reaches, and where" />
+        <StandInNote basis={you.readThrough ? { known: false, through: [you.name] } : null} brand={brand} />
         <section className="relative rounded-[14px] border bg-card px-6 py-5">
           <span aria-hidden className="absolute top-6 bottom-6 left-0 w-[3px] rounded-r-full bg-ember" />
           <div className="flex items-start justify-between gap-4">
@@ -65,7 +67,7 @@ export function AudienceView({ crumbs, brand, data, sample, base, orgId, canBuil
                       <th className="w-24" />
                       {data.sides.map((s) => (
                         <th key={s.key} className="px-1 pb-1 font-normal">
-                          {s.key === "you" && s.readThrough ? "Your customers" : s.name}
+                          {s.key === "you" && s.readThrough ? `${s.name} customers` : s.name}
                         </th>
                       ))}
                       <th className="px-1 pb-1 text-left font-normal">Who leads</th>
@@ -111,7 +113,7 @@ export function AudienceView({ crumbs, brand, data, sample, base, orgId, canBuil
             )}
           </Panel>
 
-          <Panel title="Places your customers pick">
+          <Panel title={you.readThrough ? `Places ${you.name} customers pick` : "Places your customers pick"}>
             <ul className="divide-y divide-soft">
               {[...onlyYours, ...shared].map((p) => {
                 const rival = sideOf(p.rival);

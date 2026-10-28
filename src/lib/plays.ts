@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import type { Territory } from "@/components/app/parts";
-import { possessive } from "@/lib/intent";
+import type { Basis } from "@/lib/basis";
 
 /*
  * Plays and creators (Figma page 12, boards P1–P5). The backend writes plays from the Culture Map and
@@ -12,7 +12,7 @@ export type PlayKind = "CREATOR" | "PODCAST" | "SHOW" | "PLACE" | "SOUND" | "PAR
 type Label = "YOURS" | "CONTESTED" | "THEIRS";
 export type PlayItem = { entityId: string; name: string; kind: string; label: Label; rival: string | null; proof: string };
 export type Play = { id: string; kind: PlayKind; title: string; rationale: string; why: string | null; brief: string[] | null; items: PlayItem[] | null; rank: number; createdAt: string };
-export type PlaysList = { mapReady: boolean; writing: boolean; writtenAt: string | null; queryCount: number; plays: Play[] };
+export type PlaysList = { mapReady: boolean; writing: boolean; writtenAt: string | null; queryCount: number; plays: Play[]; basis: Basis | null };
 
 export type Video = { id: string; title: string; published: string; views: number | null };
 export type Match = "name" | "handle";
@@ -54,21 +54,7 @@ export const creatorsHref = (base: string, playId?: string) => (playId ? `${base
 export const creatorHref = (base: string, entityId: string, playId?: string | null) => `${base}/plays/creators/${entityId}${playId ? `?play=${playId}` : ""}`;
 
 export const territoryOf = (label: Label): Territory => (label === "YOURS" ? "yours" : label === "CONTESTED" ? "contested" : "theirs");
-export const leanWords = (label: Label, rival: string | null, brand?: string) => (label === "YOURS" ? (brand ? `Only ${possessive(brand)}` : "Only yours") : label === "CONTESTED" ? `Shared with ${rival ?? "a rival"}` : `${rival ?? "A rival"}’s`);
 
-/**
- * The backend writes for the brand ("your customers"). An agency reads the same words about its
- * client, so they name the brand instead (as the overview does).
- */
-export function forViewer(text: string, brand: string, viaAgency: boolean) {
-  if (!viaAgency) return text;
-  const whose = possessive(brand);
-  return text
-    .replace(/\byour customers’/gi, `${whose} customers’`)
-    .replace(/\byour customers\b/gi, `${whose} customers`)
-    .replace(/\bthan yours\b/gi, `than ${whose}`)
-    .replace(/\byour way\b/gi, `${whose} way`);
-}
 
 /** "30.6k" → "about 30.6k subscribers"; no count, no claim. */
 export const subscriberWords = (s: string | null) => (s ? `about ${s} subscribers` : null);

@@ -10,7 +10,9 @@ import { type Crumb, PageBody, TopBar } from "@/components/shell/top-bar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { AppError } from "@/lib/errors";
-import { forViewer, GROUPS, KIND_WORD, leanWords, type Play, type PlayKind, playHref, plays as playsApi, type PlaysList as Data, territoryOf } from "@/lib/plays";
+import { StandInNote } from "@/components/app/stand-in-note";
+import { type Basis, inWords, wordsFor } from "@/lib/basis";
+import { GROUPS, KIND_WORD, type Play, type PlayKind, playHref, plays as playsApi, type PlaysList as Data, territoryOf } from "@/lib/plays";
 import { cn } from "@/lib/utils";
 
 const ICON: Record<PlayKind, LucideIcon> = { CREATOR: UserRoundIcon, PODCAST: MicIcon, SHOW: TvIcon, PLACE: MapPinIcon, SOUND: MusicIcon, ARTIST: MusicIcon, PARTNER: ShoppingBagIcon, AESTHETIC: SparklesIcon, PRICE: BookOpenIcon };
@@ -64,6 +66,7 @@ export function PlaysList({ orgId, base, trail, initial, canWork, brand, viaAgen
       <PageBody>
         <div className="mx-auto max-w-[1180px] space-y-7">
           <PageHeader eyebrow="This month" title="Plays" description={`Moves ${whose} Culture Map backs. Each one says why, and what it rests on.`} />
+          <StandInNote basis={data.basis} brand={brand} />
 
           {!data.mapReady ? (
             <Empty title="Plays come from the Culture Map" body={`Build ${whose} Culture Map first; plays are written from it.`} action={<Link href={base} className={buttonVariants({ size: "pill" })}>Go to the overview</Link>} />
@@ -84,7 +87,7 @@ export function PlaysList({ orgId, base, trail, initial, canWork, brand, viaAgen
                       <h2 className="text-[13px] font-semibold text-foreground/80">{g.label}</h2>
                       <ul className="divide-y divide-soft overflow-hidden rounded-[14px] border bg-card">
                         {here.map((p) => (
-                          <PlayRow key={p.id} play={p} base={base} lead={p.rank === 0} brand={brand} viaAgency={viaAgency} />
+                          <PlayRow key={p.id} play={p} base={base} lead={p.rank === 0} brand={brand} viaAgency={viaAgency} basis={data.basis} />
                         ))}
                       </ul>
                     </section>
@@ -97,7 +100,7 @@ export function PlaysList({ orgId, base, trail, initial, canWork, brand, viaAgen
                   aside={<Evidence tip={`Written from ${data.queryCount} Qloo lookups behind ${whose} Culture Map.`}>from {data.queryCount} Qloo lookups</Evidence>}
                   footer={data.writtenAt ? <span className="text-[12.5px] text-muted-foreground">Written {written(data.writtenAt)}</span> : null}
                 >
-                  <p>{data.plays[0]!.why ?? data.plays[0]!.rationale}</p>
+                  <p>{inWords(data.plays[0]!.why ?? data.plays[0]!.rationale, data.basis, brand, viaAgency)}</p>
                   <p className="mt-2 text-[14px] text-muted-foreground">Start with {data.plays[0]!.title.charAt(0).toLowerCase() + data.plays[0]!.title.slice(1)}.</p>
                 </XRayRead>
                 <section className="rounded-[14px] border bg-muted/50 p-4">
@@ -120,7 +123,7 @@ export function PlaysList({ orgId, base, trail, initial, canWork, brand, viaAgen
   );
 }
 
-function PlayRow({ play, base, lead, brand, viaAgency }: { play: Play; base: string; lead: boolean; brand: string; viaAgency: boolean }) {
+function PlayRow({ play, base, lead, brand, viaAgency, basis }: { play: Play; base: string; lead: boolean; brand: string; viaAgency: boolean; basis: Basis | null }) {
   const Icon = ICON[play.kind];
   const first = play.items?.[0];
   return (
@@ -136,14 +139,14 @@ function PlayRow({ play, base, lead, brand, viaAgency }: { play: Play; base: str
         {play.why && (
           <p className="mt-1 flex items-start gap-2 text-[13px] leading-relaxed text-muted-foreground">
             {first && <TerritoryGlyph kind={territoryOf(first.label)} decorative className="mt-[5px] shrink-0" />}
-            {play.why}
+            {inWords(play.why, basis, brand, viaAgency)}
           </p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-3">
         {first && (
-          <Evidence always tip={forViewer(first.proof, brand, viaAgency)} className="hidden max-w-[260px] md:inline-flex">
-            {leanWords(first.label, first.rival, viaAgency ? brand : undefined)} · {first.name}
+          <Evidence always tip={inWords(first.proof, basis, brand, viaAgency)} className="hidden max-w-[260px] md:inline-flex">
+            {first.label === "YOURS" ? wordsFor(basis, brand, viaAgency).ownChip : `Shared with ${first.rival ?? "a rival"}`} · {first.name}
           </Evidence>
         )}
         <Link href={playHref(base, play.id)} className={buttonVariants({ variant: lead ? "default" : "outline", size: "pill" })}>

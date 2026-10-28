@@ -13,6 +13,7 @@ import type { AudienceData } from "@/lib/audience";
 import { type CultureMap, inProgress } from "@/lib/maps";
 import type { WorkspaceView } from "@/lib/page-context";
 import type { Creator, Play, PlaysList as PlaysData } from "@/lib/plays";
+import type { Basis } from "@/lib/basis";
 import { backendGet } from "@/lib/session";
 import { notFound, redirect } from "next/navigation";
 
@@ -77,20 +78,21 @@ async function playOf(view: WorkspaceView, playId: string) {
 export async function PlayPage({ view, playId }: { view: WorkspaceView; playId: string }) {
   const play = await playOf(view, playId);
   if (!play) notFound();
-  const creators = play.kind === "CREATOR" ? ((await backendGet<{ creators: Creator[] }>(api(view, `/creators?play=${encodeURIComponent(play.id)}`)))?.creators ?? []) : [];
-  return <PlayView base={view.base} trail={view.crumbs()} play={play} creators={creators} brand={view.brand} viaAgency={view.viaAgency} />;
+  const found = (await backendGet<{ creators: Creator[]; basis: Basis | null }>(api(view, `/creators?play=${encodeURIComponent(play.id)}`)))!;
+  const creators = play.kind === "CREATOR" ? found.creators : [];
+  return <PlayView base={view.base} trail={view.crumbs()} play={play} creators={creators} brand={view.brand} viaAgency={view.viaAgency} basis={found.basis} />;
 }
 
 export async function CreatorsPage({ view, playId }: { view: WorkspaceView; playId?: string }) {
   const play = playId ? await playOf(view, playId) : null;
-  const data = (await backendGet<{ creators: Creator[]; checking: boolean }>(api(view, `/creators${play ? `?play=${encodeURIComponent(play.id)}` : ""}`)))!;
-  return <CreatorsView base={view.base} trail={view.crumbs()} play={play} creators={data.creators} checking={data.checking} brand={view.brand} viaAgency={view.viaAgency} />;
+  const data = (await backendGet<{ creators: Creator[]; checking: boolean; basis: Basis | null }>(api(view, `/creators${play ? `?play=${encodeURIComponent(play.id)}` : ""}`)))!;
+  return <CreatorsView base={view.base} trail={view.crumbs()} play={play} creators={data.creators} checking={data.checking} brand={view.brand} viaAgency={view.viaAgency} basis={data.basis} />;
 }
 
 export async function CreatorPage({ view, entityId, playId }: { view: WorkspaceView; entityId: string; playId?: string }) {
-  const [found, play] = await Promise.all([backendGet<{ creator: Creator }>(api(view, `/creators/${encodeURIComponent(entityId)}`)), playId ? playOf(view, playId) : null]);
+  const [found, play] = await Promise.all([backendGet<{ creator: Creator; basis: Basis | null }>(api(view, `/creators/${encodeURIComponent(entityId)}`)), playId ? playOf(view, playId) : null]);
   if (!found) notFound();
-  return <CreatorView orgId={view.orgId} base={view.base} trail={view.crumbs()} creator={found.creator} play={play} canWork={view.canWork} brand={view.brand} viaAgency={view.viaAgency} />;
+  return <CreatorView orgId={view.orgId} base={view.base} trail={view.crumbs()} creator={found.creator} play={play} canWork={view.canWork} brand={view.brand} viaAgency={view.viaAgency} basis={found.basis} />;
 }
 
 export async function AdCheckPage({ view }: { view: WorkspaceView }) {

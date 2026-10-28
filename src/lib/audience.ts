@@ -76,7 +76,8 @@ export function leaderOf(segment: AudienceData["segments"][number], sides: Audie
 /** The page's one-line read: who you reach best, where rivals beat you, where your customers go. */
 export function readOf(data: AudienceData, brand: string): string {
   const you = data.sides[0]!;
-  const subject = you.readThrough ? "Your customers" : brand;
+  // Read through brands like this one (Qloo doesn't know it): name whose customers these really are.
+  const subject = you.readThrough ? `${you.name} customers` : brand;
   const parts: string[] = [];
   if (data.hasAudience) {
     const mine = (s: AudienceData["segments"][number]) => s.cells.you!.value!;

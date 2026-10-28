@@ -13,6 +13,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { possessive } from "@/lib/intent";
 import { type CultureMap, categoryOf, type MapItem, type MapKind, ownedIn, shortName, standingOf, territoryOf } from "@/lib/maps";
 import { PHOTOS } from "@/lib/sample-data";
+import { basisFrom, inWords } from "@/lib/basis";
+import { StandInNote } from "@/components/app/stand-in-note";
 import { cn } from "@/lib/utils";
 
 type Column = { title: string; kinds: MapKind[]; fallback: StaticImageData };
@@ -126,8 +128,11 @@ export function OverviewView({
   const rivals = map.subjects.filter((s) => s.role === "RIVAL").map((s) => s.name);
   const facts = [`${market} market`, seeds.length ? `Read through ${list(seeds)}` : null, rivals.length ? `Against ${list(rivals)}` : null].filter(Boolean) as string[];
   const whose = viaAgency ? possessive(brand) : "Your";
+  // A brand Qloo doesn't know is read through brands like it: say so, and say whose customers these are.
+  const basis = basisFrom(map.subjects);
+  const say = (t: string) => inWords(t, basis, brand, viaAgency);
   const read = readOf(map, whose);
-  const plays = playsOf(map);
+  const plays = playsOf(map).map((p) => ({ ...p, body: say(p.body), why: say(p.why), tip: say(p.tip), source: say(p.source) }));
   const first = plays[0];
   const globe = audience ? globeOf(audience) : null;
 
@@ -162,10 +167,11 @@ export function OverviewView({
             </p>
           </header>
 
+          <StandInNote basis={basis} brand={brand} className="mb-4" />
           <XRayRead
             of={viaAgency ? `of ${possessive(brand)} Culture Map` : "of your Culture Map"}
             aside={
-              <Evidence tip={`Read from ${map.queryCount} Qloo lookups: what your customers and your rivals’ customers listen to, watch, follow and visit, and who each brand reaches.`}>
+              <Evidence tip={say(`Read from ${map.queryCount} Qloo lookups: what your customers and your rivals’ customers listen to, watch, follow and visit, and who each brand reaches.`)}>
                 from {map.queryCount} Qloo lookups
               </Evidence>
             }
@@ -174,7 +180,7 @@ export function OverviewView({
                 <>
                   <span className="text-[12.5px] text-muted-foreground">Based on</span>
                   {read.items.map((item) => (
-                    <RestsOn key={item.id} glyph={<TerritoryGlyph kind={territoryOf(item.label)} decorative />} name={shortName(item.name)} standing={standingWords(item)} />
+                    <RestsOn key={item.id} glyph={<TerritoryGlyph kind={territoryOf(item.label)} decorative />} name={shortName(item.name)} standing={say(standingWords(item))} />
                   ))}
                 </>
               )
@@ -198,7 +204,7 @@ export function OverviewView({
               </>
             }
           >
-            <p>{read.sentence}</p>
+            <p>{say(read.sentence)}</p>
             {map.thinData && <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">Qloo knows less about this brand than most, so some lists are short. Adding a brand your customers also buy will fill it out.</p>}
           </XRayRead>
         </div>
