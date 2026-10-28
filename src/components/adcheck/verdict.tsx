@@ -10,13 +10,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useFrames } from "@/components/adcheck/frames";
 import { OverlayChip, Player, type PlayerHandle } from "@/components/adcheck/player";
 import { recutHref } from "@/lib/recut";
+import { FitCard, needsFix } from "@/components/adcheck/fit-card";
 import { type AdDetail, type AdElement, type AdShot, ago, clock, leanWord, seconds, sentence, shotName, shotWords, territoryOfLabel, type Verdict, videoUrl } from "@/lib/ads";
 import { cn } from "@/lib/utils";
 
 const TERRITORY_WORD: Record<Territory, string> = { yours: "Leans your way", contested: "Shared", theirs: "Leans to a rival" };
 
 /** R4: what the ad is, shot by shot, and X-Ray's read of it, with the reasons beside it. */
-export function VerdictView({ orgId, base, ad, rivals, onRecut }: { orgId: string; base: string; ad: AdDetail; rivals: string[]; onRecut?: () => void }) {
+export function VerdictView({ orgId, base, ad, rivals, onRecut, brand }: { orgId: string; base: string; ad: AdDetail; rivals: string[]; onRecut?: () => void; brand: string }) {
   const recutState: RecutState = {
     href: ad.check?.recuts.length ? recutHref(base, ad.id) : null,
     writing: ad.stage === "writing re-cuts",
@@ -30,6 +31,7 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut }: { orgId: strin
   const shotAt = (ms: number) => ad.shots.find((s) => ms >= s.startMs && ms < s.endMs) ?? ad.shots.at(-1);
   const current = shotAt(time);
   const verdict = ad.check?.verdict ?? null;
+  const fitCard = needsFix(verdict?.fit) ? <FitCard fit={verdict.fit} brand={brand} /> : null;
 
   const meta = [
     seconds(ad.durationMs),
@@ -47,8 +49,9 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut }: { orgId: strin
         </header>
 
         {/* Narrower than two columns, the read comes first: it's the answer. The reasons stay below. */}
-        <div className="xl:hidden">
-          <ReadCard verdict={verdict} base={base} recut={recutState} />
+        <div className="space-y-4 xl:hidden">
+          {fitCard}
+          <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} />
         </div>
 
         {src ? (
@@ -80,8 +83,9 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut }: { orgId: strin
       </div>
 
       <aside className="min-w-0 space-y-4">
-        <div className="hidden xl:block">
-          <ReadCard verdict={verdict} base={base} recut={recutState} />
+        <div className="hidden space-y-4 xl:block">
+          {fitCard}
+          <ReadCard verdict={verdict} base={base} recut={recutState} brand={brand} />
         </div>
         {verdict && <Reasons verdict={verdict} shots={ad.shots} onSeek={src ? seek : undefined} />}
       </aside>
@@ -93,7 +97,10 @@ export function VerdictView({ orgId, base, ad, rivals, onRecut }: { orgId: strin
 
 type RecutState = { href: string | null; writing: boolean; onWrite?: () => void };
 
-function ReadCard({ verdict, base, recut }: { verdict: Verdict | null; base: string; recut: RecutState }) {
+function ReadCard({ verdict, base, recut, brand }: { verdict: Verdict | null; base: string; recut: RecutState; brand: string }) {
+  const wrongProduct = verdict?.fit?.fits === "no";
+  // Checks made before the fit check: asking for re-cuts runs it first.
+  const unchecked = Boolean(verdict && !verdict.fit);
   const noMap = !verdict || verdict.headline.startsWith("Build your Culture Map");
   const lean = leanWord(verdict?.lean ?? null, verdict?.rival ?? null);
   return (
@@ -113,8 +120,10 @@ function ReadCard({ verdict, base, recut }: { verdict: Verdict | null; base: str
             Go to Culture Map
             <ArrowRightIcon data-icon="inline-end" />
           </Link>
+        ) : wrongProduct ? (
+          <p className="text-[13px] leading-relaxed text-muted-foreground">Re-cuts are off for this ad: cutting can’t add what {brand} sells if it was never filmed.</p>
         ) : (
-          recut.href ? (
+          recut.href && !(unchecked && recut.onWrite) ? (
             <Link href={recut.href} className={cn(buttonVariants(), "h-10 w-full rounded-full text-[14px] font-semibold")}>
               See the suggested re-cut
               <ArrowRightIcon data-icon="inline-end" />
@@ -126,7 +135,7 @@ function ReadCard({ verdict, base, recut }: { verdict: Verdict | null; base: str
             </Button>
           ) : recut.onWrite ? (
             <Button onClick={recut.onWrite} className="h-10 w-full rounded-full text-[14px] font-semibold">
-              Write a suggested re-cut
+              {unchecked && recut.href ? `Check it shows what ${brand} sells` : "Write a suggested re-cut"}
               <ArrowRightIcon data-icon="inline-end" />
             </Button>
           ) : null

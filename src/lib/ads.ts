@@ -47,6 +47,18 @@ export type Verdict = {
   references: { name: string; says: string }[];
   reshoot: string[];
   notes: string[];
+  /** Does the ad show what the business sells? Absent on checks made before it (backend adcheck.fit.ts). */
+  fit?: Fit;
+};
+export type Fit = {
+  adShows: string;
+  fits: "yes" | "partly" | "no";
+  otherBrands: string[];
+  nameShown: boolean;
+  message: "clear" | "vague" | "missing";
+  headline: string;
+  why: string;
+  advice: { what: string; why: string }[];
 };
 export type AdDetail = Omit<AdSummary, "lean" | "rival" | "headline"> & {
   shots: AdShot[];
@@ -147,6 +159,7 @@ export const STEPS = [
   { id: "watch", title: "Watching, reading the text and listening", stages: ["watching"] },
   { id: "describe", title: "Describing each shot", stages: ["describing shots"] },
   { id: "place", title: "Comparing it with your customers’ culture", stages: ["saving", "placing on your map"] },
+  { id: "fit", title: "Checking it shows what you sell", stages: ["checking what it sells", "writing re-cuts"] },
 ] as const;
 
 /** Which step the reading is on (0-based), from the worker's stage. */
