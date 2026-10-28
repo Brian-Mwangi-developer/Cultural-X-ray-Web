@@ -76,9 +76,29 @@ class BackendError extends Error {
  * A GET to the backend as the signed-in person. 401 sends them to log in, 404 renders
  * the not-found page, anything else throws to the nearest error boundary (which reports it).
  */
+/** Answers that mean "try again in a moment": the backend restarting or busy, not a real failure. */
+const PASSING = new Set([429, 502, 503, 504]);
+const WAITS_MS = [300, 900];
+
+/**
+ * One GET with two quick retries for passing trouble: a deploy or a dev restart refusing the
+ * connection for a second, or a busy moment. Without them a page loaded at that instant fails whole.
+ */
+async function fetchBackend(url: string, init: RequestInit): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, init);
+      if (!PASSING.has(res.status) || attempt >= WAITS_MS.length) return res;
+    } catch (error) {
+      if (attempt >= WAITS_MS.length) throw error;
+    }
+    await new Promise((r) => setTimeout(r, WAITS_MS[attempt]));
+  }
+}
+
 export async function backendGet<T>(path: string, { allowAnonymous = false } = {}): Promise<T | null> {
   const cookie = (await headers()).get("cookie") ?? "";
-  const res = await fetch(`${backendUrl}${path}`, { headers: { cookie }, cache: "no-store" });
+  const res = await fetchBackend(`${backendUrl}${path}`, { headers: { cookie }, cache: "no-store" });
   if (res.status === 401) {
     if (allowAnonymous) return null;
     redirect("/login?expired=1");
