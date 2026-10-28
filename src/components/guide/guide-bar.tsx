@@ -20,14 +20,22 @@ import { findAnchor, type Run, useGuide } from "./guide-context";
  */
 export function GuideDock() {
   const g = useGuide();
+  // The Ask chat panel opens bottom right; the bar moves left and narrows so neither covers the other.
+  const [chat, setChat] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => setChat(Boolean((e as CustomEvent<boolean>).detail));
+    window.addEventListener("xray:ask-panel", on);
+    return () => window.removeEventListener("xray:ask-panel", on);
+  }, []);
   if (!g?.guide) return null;
   // The Ask page and the re-cut editor have their own controls along the bottom.
   if (/(^|\/)ask$|\/recut$/.test(g.rest)) return null;
   return (
     <>
-      <div className="h-24 shrink-0" aria-hidden />
+      {/* mt-auto: on a short page (or while it loads) the bar still sits at the bottom of the screen. */}
+      <div className="mt-auto h-24 shrink-0" aria-hidden />
       <div className="pointer-events-none sticky bottom-0 z-[48] h-0">
-        <div className="absolute inset-x-0 bottom-5 flex justify-center px-3 sm:px-6">
+        <div className={cn("absolute inset-x-0 bottom-5 flex px-3 sm:px-6", chat ? "justify-start lg:pr-[460px]" : "justify-center")}>
           <Bar />
         </div>
       </div>
@@ -45,18 +53,16 @@ function Bar() {
   const doneCount = guide.steps.filter((s) => s.done).length;
   const parts = useXrayParts(g.xray);
 
+  // Folded: the mark still opens Ask X-Ray; the rest unfolds the bar.
   if (folded && !g.run && !g.xray)
     return (
-      <button
-        type="button"
-        onClick={() => void g.mark([], ["bar:folded"])}
-        className="pointer-events-auto flex items-center gap-2 rounded-full border bg-card py-1.5 pr-3.5 pl-1.5 text-[12.5px] font-medium text-muted-foreground shadow-[0_12px_32px_-14px_rgba(0,0,0,0.3)] hover:text-foreground"
-        aria-label="Open the guide"
-      >
-        <Mark />
-        {guide.next ? `${doneCount} of ${guide.steps.length}` : "Guide"}
-        <ChevronUpIcon className="size-3.5" />
-      </button>
+      <div className="pointer-events-auto flex items-center gap-1 rounded-full border bg-card p-1.5 text-[12.5px] font-medium text-muted-foreground shadow-[0_12px_32px_-14px_rgba(0,0,0,0.3)]">
+        <AskMark />
+        <button type="button" onClick={() => void g.mark([], ["bar:folded"])} className="flex h-9 items-center gap-1.5 rounded-full px-2.5 hover:bg-muted hover:text-foreground" aria-label="Open the guide">
+          {guide.next ? `${doneCount} of ${guide.steps.length}` : "Guide"}
+          <ChevronUpIcon className="size-3.5" />
+        </button>
+      </div>
     );
 
   let line: React.ReactNode;
