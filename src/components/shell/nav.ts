@@ -55,7 +55,7 @@ export function settingsNav(slug: string, kind: OrgKind, counts: { members: numb
           ? { label: "Clients", href: `${base}/clients`, icon: BriefcaseBusinessIcon, count: counts.clients }
           : { label: "Agencies", href: `${base}/agencies`, icon: LinkIcon, count: counts.agencies },
         { label: "Billing", href: `${base}/billing`, icon: BadgeDollarSignIcon },
-        { label: "Qloo usage", href: `${base}/usage`, icon: TrendingUpIcon },
+        { label: "Usage", href: `${base}/usage`, icon: TrendingUpIcon },
       ],
     },
     {

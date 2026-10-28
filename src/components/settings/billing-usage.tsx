@@ -2,7 +2,7 @@ import { CheckIcon, CreditCardIcon, FileTextIcon } from "lucide-react";
 import { BrandMark, Meta, Panel, SampleBadge } from "@/components/app/parts";
 import { SoonButton } from "@/components/app/soon-button";
 import type { ClientSummary, OrgKind } from "@/lib/session";
-import { count, KIND_WORDS, resetsWords, type Usage } from "@/lib/usage";
+import { type AiSpend, count, dollars, KIND_WORDS, resetsWords, talkWords, type Usage } from "@/lib/usage";
 import { SettingsSection } from "./parts";
 
 const PLANS = {
@@ -84,7 +84,7 @@ export function BillingView({ kind, clients = [] }: { kind: OrgKind; clients?: C
 }
 
 /** Settings › Usage: this month's Qloo queries from the ledger, where they went, and when they reset. */
-export function UsageView({ kind, usage }: { kind: OrgKind; usage: Usage }) {
+export function UsageView({ kind, usage, spend }: { kind: OrgKind; usage: Usage; spend?: AiSpend | null }) {
   const pct = usage.allowance ? Math.min(100, (usage.used / usage.allowance) * 100) : 0;
   const pooled = !usage.payer.self;
   const byClient = kind === "AGENCY" || pooled;
@@ -131,6 +131,63 @@ export function UsageView({ kind, usage }: { kind: OrgKind; usage: Usage }) {
           <p className="px-5 py-8 text-center text-[14px] text-muted-foreground">No Qloo queries yet this month.</p>
         )}
       </Panel>
+      {spend && <AiSpendView spend={spend} resetsOn={usage.resetsOn} />}
     </>
+  );
+}
+
+/** Gemini cost this month, by person (and by activity for owners and admins). */
+function AiSpendView({ spend, resetsOn }: { spend: AiSpend; resetsOn: string }) {
+  return (
+    <SettingsSection
+      title="Gemini cost by person"
+      description={
+        spend.everyone
+          ? `What reading ads, writing plays and talking to X-Ray cost on Google’s Gemini this month, by who asked for it. Restarts on ${resetsWords(resetsOn)}.`
+          : "What your own ad checks, plays and talking to X-Ray cost on Gemini this month. Owners and admins see everyone’s."
+      }
+    >
+      {spend.everyone && spend.totalMicros !== null && (
+        <div className="mb-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 rounded-[16px] border bg-card px-6 py-5">
+          <p>
+            <span className="text-[30px] font-semibold tracking-[-0.03em] tabular-nums">{dollars(spend.totalMicros)}</span>
+            <span className="ml-2 text-[14px] text-muted-foreground">this month</span>
+          </p>
+          {spend.byActivity.map((a) => (
+            <p key={a.name} className="text-[13.5px] text-muted-foreground">
+              {a.name} <span className="font-medium text-foreground tabular-nums">{dollars(a.costMicros)}</span>
+              {talkWords(a.seconds)}
+            </p>
+          ))}
+        </div>
+      )}
+      <Panel title="By person">
+        {spend.byPerson.length ? (
+          <table className="w-full text-left text-[14px]">
+            <thead className="text-[12.5px] text-muted-foreground">
+              <tr className="border-b">
+                <th className="px-5 py-2.5 font-normal">Who</th>
+                <th className="px-5 py-2.5 text-right font-normal">Gemini calls</th>
+                <th className="px-5 py-2.5 text-right font-normal">Cost</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-soft">
+              {spend.byPerson.map((p) => (
+                <tr key={p.userId ?? "gone"}>
+                  <td className="px-5 py-[var(--row-y)]">
+                    <span className="block font-medium">{p.name}</span>
+                    {p.email && <span className="block text-[12.5px] text-muted-foreground">{p.email}</span>}
+                  </td>
+                  <td className="px-5 text-right font-mono text-[13px] tabular-nums">{count(p.calls)}</td>
+                  <td className="px-5 text-right font-mono text-[13px] tabular-nums">{dollars(p.costMicros)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="px-5 py-8 text-center text-[14px] text-muted-foreground">No Gemini use yet this month.</p>
+        )}
+      </Panel>
+    </SettingsSection>
   );
 }
