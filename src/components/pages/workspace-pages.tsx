@@ -13,6 +13,7 @@ import type { AudienceData } from "@/lib/audience";
 import { type CultureMap, inProgress } from "@/lib/maps";
 import type { WorkspaceView } from "@/lib/page-context";
 import type { Creator, Play, PlaysList as PlaysData } from "@/lib/plays";
+import type { TerritoryView } from "@/lib/territory";
 import type { Basis } from "@/lib/basis";
 import { backendGet } from "@/lib/session";
 import { notFound, redirect } from "next/navigation";
@@ -61,9 +62,11 @@ export async function AudiencePage({ view }: { view: WorkspaceView }) {
   return <AudienceView crumbs={view.crumbs({ label: "Audience & places" })} brand={view.brand} data={audience} base={view.base} orgId={view.orgId} canBuild={view.canWork} />;
 }
 
-/** Still sample data on both sides (Architecture.md §12), labelled as such. */
-export function MapPage({ view }: { view: WorkspaceView }) {
-  return <CultureMapView crumbs={view.crumbs({ label: "Culture Map" })} brand={view.brand} rivals={view.rivals} defaultMarket={view.marketCode} />;
+/** The latest ready map, podcasts first; filters and other categories load in the page. */
+export async function MapPage({ view }: { view: WorkspaceView }) {
+  const data = (await backendGet<TerritoryView>(api(view, "/maps/latest/territory?category=PODCAST")))!;
+  if (!data.map || !data.view) return <NoMapYet orgId={view.orgId} brand={view.brand} canBuild={view.canWork} crumb="Culture Map" />;
+  return <CultureMapView orgId={view.orgId} base={view.base} crumbs={view.crumbs({ label: "Culture Map" })} brand={view.brand} viaAgency={view.viaAgency} canWork={view.canWork} initial={{ map: data.map, view: data.view }} />;
 }
 
 export async function PlaysPage({ view }: { view: WorkspaceView }) {
