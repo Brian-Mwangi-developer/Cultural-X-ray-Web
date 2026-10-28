@@ -8,7 +8,7 @@ import remarkGfm from "remark-gfm";
 import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, CircleCheckIcon, CopyIcon, LoaderCircleIcon, MapIcon, MapPinIcon, MicIcon, SquareIcon, TvIcon, UsersIcon } from "lucide-react";
 import { AssistantAvatar } from "@/components/ask/assistant-mark";
 import { Visual } from "@/components/ask/ask-visuals";
-import { GUIDE_TOOLS, GuideAction } from "@/components/ask/ask-actions";
+import { GUIDE_TOOLS, GuideAction, Remembered } from "@/components/ask/ask-actions";
 import { Button } from "@/components/ui/button";
 import { type AskMessage, type AskStatus, askTransport, STARTERS } from "@/lib/ask";
 import { cn } from "@/lib/utils";
@@ -75,6 +75,7 @@ function Answer({ message, streaming, live }: { message: AskMessage; streaming: 
         {message.parts.map((p, i) => {
           if (p.type === "text") return p.text.trim() ? <Markdown key={i} text={p.text} /> : null;
           if (isToolUIPart(p) && getToolName(p).startsWith("show_")) return <Visual key={p.toolCallId} tool={getToolName(p)} input={p.input} ready={p.state === "input-available" || p.state === "output-available"} />;
+          if (isToolUIPart(p) && getToolName(p) === "remember" && p.state === "output-available") return <Remembered key={p.toolCallId} output={p.output} />;
           if (isToolUIPart(p) && GUIDE_TOOLS.has(getToolName(p)) && p.state === "output-available") return <GuideAction key={p.toolCallId} id={p.toolCallId} tool={getToolName(p)} input={p.input} output={p.output} live={live} />;
           return null;
         })}

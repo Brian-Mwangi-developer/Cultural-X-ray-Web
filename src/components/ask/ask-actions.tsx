@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { CompassIcon, CrosshairIcon, MoveRightIcon, RotateCcwIcon } from "lucide-react";
+import { BookmarkIcon, CompassIcon, CrosshairIcon, MoveRightIcon, RotateCcwIcon } from "lucide-react";
 import { ANCHORS, guideDo, type GuideDo, JOURNEYS } from "@/lib/guide";
 
 /** Actions already carried out, so a re-render (or the same answer shown twice) never repeats one. */
@@ -43,7 +43,7 @@ export function GuideAction({ id, tool, input, output, live }: { id: string; too
 }
 
 /** The action, only when the server said it can be done (it checks against what's on screen). */
-function actionOf(tool: string, input: unknown, output: unknown): GuideDo | null {
+export function actionOf(tool: string, input: unknown, output: unknown): GuideDo | null {
   const i = (input ?? {}) as Record<string, string>;
   const o = (output ?? {}) as Record<string, unknown>;
   if (tool === "go_to" && o.opened) return { kind: "go", path: String(o.path ?? "") };
@@ -53,3 +53,21 @@ function actionOf(tool: string, input: unknown, output: unknown): GuideDo | null
 }
 
 export const GUIDE_TOOLS = new Set(["go_to", "point_at", "walk_through"]);
+
+/** The assistant kept a note (the remember tool): said in the conversation, with where to manage it. */
+export function Remembered({ output }: { output: unknown }) {
+  const o = (output ?? {}) as { kept?: boolean; fact?: string; note?: string };
+  if (!o.kept || !o.fact) return null;
+  const settings = typeof window === "undefined" ? "#" : `/${location.pathname.split("/")[1]}/settings/profile#memory`;
+  return (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-muted-foreground">
+      <BookmarkIcon className="size-3.5 text-ember-ink" aria-hidden />
+      <span>
+        Remembered: <span className="text-foreground/85">{o.fact}</span>
+      </span>
+      <a href={settings} className="rounded-full px-1.5 py-0.5 hover:bg-muted hover:text-foreground">
+        Manage
+      </a>
+    </p>
+  );
+}

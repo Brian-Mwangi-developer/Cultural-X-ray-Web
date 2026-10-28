@@ -12,7 +12,12 @@ export type Step = { id: string; title: string; hint: string; minutes: number; p
 export type News = { since: string; items: { id: string; text: string; page: string }[] };
 export type Guide = { steps: Step[]; next: Step | null; goal: Goal | null; marks: string[]; news: News | null };
 
+export type Memory = { on: boolean; facts: { id: string; fact: string; source: "said" | "picked"; createdAt: string }[] };
+
 export const guideApi = {
+  memory: (orgId: string) => api<{ memory: Memory }>(`/orgs/${orgId}/guide/memory`),
+  forget: (orgId: string, id: string | "all") => api<void>(`/orgs/${orgId}/guide/memory/${id}`, { method: "DELETE" }),
+  remembering: (on: boolean) => api<{ on: boolean }>("/me/guide/memory", { method: "PUT", body: { on } }),
   get: (orgId: string) => api<{ guide: Guide }>(`/orgs/${orgId}/guide`),
   marks: (orgId: string, body: { add?: string[]; remove?: string[] }) => api<void>(`/orgs/${orgId}/guide/marks`, { method: "PUT", body }),
   person: () => api<{ welcomed: boolean; goal: Goal | null }>("/me/guide"),
