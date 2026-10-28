@@ -62,7 +62,7 @@ export type OrgContext = {
   counts: { members: number; invitations: number; clients: number; agencies: number; pendingRequests: number };
 };
 
-class BackendError extends Error {
+export class BackendError extends Error {
   constructor(
     readonly status: number,
     readonly path: string,

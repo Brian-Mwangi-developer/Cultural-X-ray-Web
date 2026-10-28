@@ -6,7 +6,8 @@ import { AgencyFlow } from "@/components/onboarding/agency-flow";
 import { BrandFlow } from "@/components/onboarding/brand-flow";
 import { Chooser, type Joinable } from "@/components/onboarding/chooser";
 import { SessionGuard } from "@/components/auth/session-guard";
-import { backendGet, requireOrg, requireUser } from "@/lib/session";
+import { WelcomeRoom } from "@/components/guide/welcome-room";
+import { BackendError, backendGet, requireOrg, requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Set up" };
 
@@ -30,6 +31,21 @@ async function Onboarding({ searchParams }: { searchParams: PageProps<"/onboardi
   // Steps after the first need the org they just made, and only its owners or admins continue.
   const org = orgSlug ? await requireOrg(orgSlug) : null;
   if (org && !["owner", "admin"].includes(org.membership.role)) notFound();
+
+  // The welcome room (Figma 17), once per person, before the first step. A failed read skips it.
+  if (!org && step === 1) {
+    const person = await backendGet<{ welcomed: boolean }>("/api/v1/me/guide").catch((error: unknown) => {
+      if (error instanceof BackendError) return null;
+      throw error;
+    });
+    if (person && !person.welcomed)
+      return (
+        <>
+          <SessionGuard userId={user.id} />
+          <WelcomeRoom name={user.name} agency={kind === "agency"} />
+        </>
+      );
+  }
 
   if (kind === "agency" && (!org || org.organization.kind === "AGENCY")) {
     return (
