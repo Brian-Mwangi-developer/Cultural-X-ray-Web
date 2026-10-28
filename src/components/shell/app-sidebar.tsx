@@ -24,7 +24,8 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { readIntent, rivalNames, seedNames } from "@/lib/intent";
-import { isManager } from "@/lib/roles";
+import { canWork, isManager } from "@/lib/roles";
+import { CompareDialog } from "@/components/compare/compare-dialog";
 import type { ClientSummary, Membership, OrgContext, Preferences } from "@/lib/session";
 import { count, resetsWords, type Usage, usageApi } from "@/lib/usage";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ export function AppSidebar({ user, org, memberships, clients }: { user: ShellUse
   const marketLabel = o.markets.map((m) => (m === "GB" ? "UK" : "US")).join(" · ");
   const intent = readIntent(o.metadata);
   const subtitle = agency ? undefined : [intent.city, marketLabel && `${marketLabel} market`].filter(Boolean).join(" · ") || undefined;
+  const [compareOpen, setCompareOpen] = useState(false);
 
   return (
     <Sidebar className="border-r-0">
@@ -106,24 +108,44 @@ export function AppSidebar({ user, org, memberships, clients }: { user: ShellUse
             </SidebarGroup>
           </>
         ) : (
-          (intent.seeds?.length || intent.rivals?.length) && (
-            <SidebarGroup>
-              <SidebarGroupLabel className={labelClass}>Compared with</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  {[...seedNames(intent).map((b) => ({ b, role: "seed" })), ...rivalNames(intent).map((b) => ({ b, role: "rival" }))].map(({ b, role }) => (
-                    <SidebarMenuItem key={`${role}-${b}`}>
-                      <SidebarMenuButton render={<Link href={`/${o.slug}/map`} />} className={itemClass}>
-                        <BrandMark name={b} size="xs" tone="neutral" />
-                        <span className="flex-1 truncate">{b}</span>
-                        <span className="text-[12px] text-muted-foreground">{role}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )
+          <SidebarGroup>
+            <div className="flex items-center pr-1">
+              <SidebarGroupLabel className={cn(labelClass, "flex-1")}>Compared with</SidebarGroupLabel>
+              {canWork(org.membership.role) && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <button
+                        type="button"
+                        onClick={() => setCompareOpen(true)}
+                        aria-label="Add a rival or a brand to read through"
+                        className="flex size-6 items-center justify-center rounded-[7px] text-muted-foreground transition-colors hover:bg-ember-soft hover:text-ember-ink"
+                      />
+                    }
+                  >
+                    <PlusIcon className="size-4" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[240px] text-left leading-relaxed">
+                    Add a rival or a brand to read through. Rivals are who you compare against; read-through brands stand in for your customers.
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5">
+                {[...seedNames(intent).map((b) => ({ b, role: "read through" })), ...rivalNames(intent).map((b) => ({ b, role: "rival" }))].map(({ b, role }) => (
+                  <SidebarMenuItem key={`${role}-${b}`}>
+                    <SidebarMenuButton render={<Link href={`/${o.slug}/map`} />} className={itemClass}>
+                      <BrandMark name={b} size="xs" tone="neutral" />
+                      <span className="flex-1 truncate">{b}</span>
+                      <span className="text-[12px] text-muted-foreground">{role}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+            <CompareDialog orgId={o.id} base={`/${o.slug}`} open={compareOpen} onOpenChange={setCompareOpen} />
+          </SidebarGroup>
         )}
       </SidebarContent>
 

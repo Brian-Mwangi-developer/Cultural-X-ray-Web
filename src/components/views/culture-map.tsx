@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { CircleCheckIcon, CircleHelpIcon, HistoryIcon, SearchIcon, SparklesIcon } from "lucide-react";
+import { CircleCheckIcon, CircleHelpIcon, HistoryIcon, PlusIcon, SearchIcon, SparklesIcon } from "lucide-react";
+import { CompareDialog } from "@/components/compare/compare-dialog";
 import { Evidence, initialsOf, LeanBar, TerritoryGlyph, WideOnly, type Territory } from "@/components/app/parts";
 import { SoonButton } from "@/components/app/soon-button";
 import { XRayRead } from "@/components/app/xray-read";
@@ -42,6 +43,7 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<TerritoryItem | null>(null);
   const [rebuildOpen, setRebuildOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
   const asked = useRef(new Set<string>());
   const wasBuilding = useRef(false);
   const map = initial.map;
@@ -142,6 +144,12 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
                 {r}
               </span>
             ))}
+            {canWork && (
+              <Button variant="outline" size="pill" className="h-8 text-muted-foreground" onClick={() => setCompareOpen(true)}>
+                <PlusIcon data-icon="inline-start" />
+                Change who you compare with
+              </Button>
+            )}
           </div>
           <span className="inline-flex h-8 items-center rounded-full border bg-muted/60 px-3 text-[13px] font-medium">{map.market === "GB" ? "UK" : "US"} market</span>
         </div>
@@ -237,6 +245,8 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
         }}
         onClose={() => setSelected(null)}
       />
+
+      <CompareDialog orgId={orgId} base={base} open={compareOpen} onOpenChange={setCompareOpen} />
 
       <AlertDialog open={rebuildOpen} onOpenChange={setRebuildOpen}>
         <AlertDialogContent>
