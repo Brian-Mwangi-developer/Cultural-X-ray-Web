@@ -15,6 +15,17 @@ export const askApi = {
 };
 
 /**
+ * What the person has on screen as they ask: the page inside the workspace and the guide parts on it,
+ * so the assistant can point at what's really there (backend guide tools).
+ */
+function screenNow() {
+  if (typeof document === "undefined") return undefined;
+  const page = location.pathname.split("/").slice(2).join("/");
+  const parts = [...new Set([...document.querySelectorAll<HTMLElement>("[data-guide]")].map((el) => el.dataset.guide!))].slice(0, 40);
+  return { page, parts };
+}
+
+/**
  * The chat transport: sends only the new question (the server keeps the history), carries the
  * session-owner header, learns the thread id from the reply, and turns error replies into
  * plain messages instead of raw JSON.
@@ -24,7 +35,7 @@ export function askTransport(orgId: string, thread: { current: string | null }, 
     api: `/api/v1/orgs/${orgId}/ask`,
     credentials: "same-origin",
     headers: () => userHeaders(),
-    prepareSendMessagesRequest: ({ messages }) => ({ body: { threadId: thread.current ?? undefined, message: messages.at(-1) } }),
+    prepareSendMessagesRequest: ({ messages }) => ({ body: { threadId: thread.current ?? undefined, message: messages.at(-1), screen: screenNow() } }),
     fetch: async (input, init) => {
       const res = await fetch(input, init);
       const id = res.headers.get("x-ask-thread");

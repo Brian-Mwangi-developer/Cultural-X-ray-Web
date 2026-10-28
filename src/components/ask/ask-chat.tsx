@@ -8,12 +8,18 @@ import remarkGfm from "remark-gfm";
 import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, CircleCheckIcon, CopyIcon, LoaderCircleIcon, MapIcon, MapPinIcon, MicIcon, SquareIcon, TvIcon, UsersIcon } from "lucide-react";
 import { AssistantAvatar } from "@/components/ask/assistant-mark";
 import { Visual } from "@/components/ask/ask-visuals";
+import { GUIDE_TOOLS, GuideAction } from "@/components/ask/ask-actions";
 import { Button } from "@/components/ui/button";
 import { type AskMessage, type AskStatus, askTransport, STARTERS } from "@/lib/ask";
 import { cn } from "@/lib/utils";
 
 const STARTER_ICONS = { mic: MicIcon, "map-pin": MapPinIcon, tv: TvIcon, users: UsersIcon } as const;
-const READS: Record<string, [string, string]> = { read_map: ["Reading your map", "Read your map"], read_audience: ["Reading who you reach", "Read who you reach"] };
+const READS: Record<string, [string, string]> = {
+  read_map: ["Reading your map", "Read your map"],
+  read_audience: ["Reading who you reach", "Read who you reach"],
+  status: ["Checking where you are", "Checked where you are"],
+  about: ["Reading how this page works", "Read how this page works"],
+};
 
 type Part = AskMessage["parts"][number];
 
@@ -30,7 +36,7 @@ function Markdown({ text }: { text: string }) {
 /** The reading steps (read_map, read_audience) fold into one quiet line, as in board X1. */
 function Steps({ parts }: { parts: Part[] }) {
   const [open, setOpen] = useState(false);
-  const reads = parts.filter((p) => isToolUIPart(p) && getToolName(p).startsWith("read_"));
+  const reads = parts.filter((p) => isToolUIPart(p) && getToolName(p) in READS);
   if (!reads.length) return null;
   const working = reads.some((p) => isToolUIPart(p) && p.state !== "output-available" && p.state !== "output-error");
   const labels = reads.map((p) => (isToolUIPart(p) ? READS[getToolName(p)]?.[working ? 0 : 1] ?? getToolName(p) : ""));
@@ -47,7 +53,8 @@ function Steps({ parts }: { parts: Part[] }) {
           {reads.map((p, i) => (
             <li key={i} className="flex items-center gap-2">
               <CheckIcon className="size-3" aria-hidden />
-              {isToolUIPart(p) ? (READS[getToolName(p)]?.[1] ?? getToolName(p)) : ""} from Qloo, through this workspace&rsquo;s map
+              {isToolUIPart(p) ? (READS[getToolName(p)]?.[1] ?? getToolName(p)) : ""}
+              {isToolUIPart(p) && getToolName(p).startsWith("read_") ? <> from Qloo, through this workspace&rsquo;s map</> : null}
             </li>
           ))}
         </ul>
@@ -56,7 +63,7 @@ function Steps({ parts }: { parts: Part[] }) {
   );
 }
 
-function Answer({ message, streaming }: { message: AskMessage; streaming: boolean }) {
+function Answer({ message, streaming, live }: { message: AskMessage; streaming: boolean; /** Arrived in this visit, so its actions run once. */ live: boolean }) {
   const [copied, setCopied] = useState(false);
   const text = message.parts.map((p) => (p.type === "text" ? p.text : "")).join("\n\n").trim();
   const meta = message.metadata;
@@ -68,6 +75,7 @@ function Answer({ message, streaming }: { message: AskMessage; streaming: boolea
         {message.parts.map((p, i) => {
           if (p.type === "text") return p.text.trim() ? <Markdown key={i} text={p.text} /> : null;
           if (isToolUIPart(p) && getToolName(p).startsWith("show_")) return <Visual key={p.toolCallId} tool={getToolName(p)} input={p.input} ready={p.state === "input-available" || p.state === "output-available"} />;
+          if (isToolUIPart(p) && GUIDE_TOOLS.has(getToolName(p)) && p.state === "output-available") return <GuideAction key={p.toolCallId} id={p.toolCallId} tool={getToolName(p)} input={p.input} output={p.output} live={live} />;
           return null;
         })}
         {!streaming && text && (
@@ -199,6 +207,8 @@ export function AskChat({
   const localId = useId();
   const [chatId] = useState(() => threadId ?? localId);
   const { messages, sendMessage, status: chatStatus, stop, error } = useChat<AskMessage>({ id: chatId, messages: initialMessages, transport, experimental_throttle: 40 });
+  // Answers loaded with the thread; only new ones carry out their actions on the page.
+  const [earlier] = useState(() => new Set(initialMessages.map((m) => m.id)));
   const [draft, setDraft] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -279,7 +289,7 @@ export function AskChat({
                   <p className="max-w-[85%] rounded-[18px] bg-soft px-4 py-2.5 text-[14.5px] leading-relaxed whitespace-pre-wrap">{m.parts.map((p) => (p.type === "text" ? p.text : "")).join("")}</p>
                 </div>
               ) : (
-                <Answer key={m.id} message={m} streaming={busy && i === messages.length - 1} />
+                <Answer key={m.id} message={m} streaming={busy && i === messages.length - 1} live={!earlier.has(m.id)} />
               ),
             )}
             {waiting && <Thinking />}

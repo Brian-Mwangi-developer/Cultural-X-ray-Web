@@ -52,9 +52,9 @@ export function MainShell({
             <GuideDock />
           </SidebarInset>
         </SidebarProvider>
+        {/* Agencies ask across clients once they can read client maps. */}
+        {o.kind === "WORKSPACE" && <AskLauncher orgId={o.id} slug={o.slug} brand={o.name} docked />}
       </GuideProvider>
-      {/* Agencies ask across clients once they can read client maps. */}
-      {o.kind === "WORKSPACE" && <AskLauncher orgId={o.id} slug={o.slug} brand={o.name} docked />}
       <FeedbackTab email={user.email} />
     </CommandMenu>
   );

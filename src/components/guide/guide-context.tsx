@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { type Guide, type GuideEvent, guideApi, type Journey, JOURNEYS, journeyForPath } from "@/lib/guide";
+import { ANCHORS, type Guide, type GuideDo, type GuideEvent, guideApi, type Journey, JOURNEYS, journeyForPath } from "@/lib/guide";
 
 /**
  * The guide's state for one workspace or agency (Figma 19–21): steps from the backend, the journey
@@ -105,10 +105,8 @@ export function GuideProvider({ orgId, base, kind, children }: { orgId: string; 
     if (seen && !guide.marks.includes(seen)) void mark([seen]);
   }, [guide, rest, kind, mark]);
 
-  const start = useCallback(
-    (id: string) => {
-      const journey = JOURNEYS[id];
-      if (!journey) return;
+  const begin = useCallback(
+    (journey: Journey) => {
       setXray(false);
       setPanel("none");
       setRun({ journey, index: 0, status: "finding" });
@@ -116,6 +114,23 @@ export function GuideProvider({ orgId, base, kind, children }: { orgId: string; 
     },
     [base, rest, router],
   );
+  const start = useCallback((id: string) => JOURNEYS[id] && begin(JOURNEYS[id]), [begin]);
+
+  // The assistant's hands (Ask X-Ray's go_to, point_at, walk_through), carried out here.
+  useEffect(() => {
+    const onDo = (e: Event) => {
+      const a = (e as CustomEvent<GuideDo>).detail;
+      if (a.kind === "go") router.push(`${base}${a.path ? `/${a.path}` : ""}` as never);
+      else if (a.kind === "walk") start(a.journey);
+      else {
+        const anchor = ANCHORS[a.part];
+        if (!anchor) return;
+        begin({ id: `point:${a.part}`, title: "X-Ray is showing you", minutes: 0, page: anchor.page ?? null, done: "", steps: [{ anchor: a.part, title: anchor.title, say: a.say }] });
+      }
+    };
+    window.addEventListener("xray:guide-do", onDo);
+    return () => window.removeEventListener("xray:guide-do", onDo);
+  }, [base, router, start, begin]);
 
   // Reads of the current run for the handlers below, so no side effect sits inside a state update.
   const runRef = useRef<Run | null>(null);
@@ -128,7 +143,8 @@ export function GuideProvider({ orgId, base, kind, children }: { orgId: string; 
       const r = runRef.current;
       setRun(null);
       // Taken or dismissed, a page's walk-through isn't offered again (Show the tours again resets it).
-      if (r) void mark([`tour:${r.journey.id}`, ...(finished ? [r.journey.done] : [])]);
+      // A one-off point from the assistant leaves no mark.
+      if (r && JOURNEYS[r.journey.id]) void mark([`tour:${r.journey.id}`, ...(finished ? [r.journey.done] : [])]);
     },
     [mark],
   );
