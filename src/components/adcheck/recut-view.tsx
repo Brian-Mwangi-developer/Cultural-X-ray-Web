@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { toast } from "sonner";
 import { ArrowLeftIcon, ClapperboardIcon, DownloadIcon, PlayIcon, ScissorsIcon, XIcon } from "lucide-react";
 import { Evidence, Panel, PanelRows, TerritoryGlyph } from "@/components/app/parts";
 import { XRayRead } from "@/components/app/xray-read";
@@ -11,17 +10,19 @@ import { useFrames } from "@/components/adcheck/frames";
 import { Player, type PlayerHandle } from "@/components/adcheck/player";
 import { Segmented } from "@/components/forms/fields";
 import { type Crumb, PageBody, TopBar } from "@/components/shell/top-bar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { type AdDetail, type AdShot, leanWord, seconds, shotName, videoUrl } from "@/lib/ads";
-import { applyChanges, type Clip, type EditChange, KIND_LABEL, proofWords, type RecutKind } from "@/lib/recut";
+import { applyChanges, type Clip, cutOf, type EditChange, FORMAT_FOR, KIND_LABEL, proofWords, type RecutKind, tweakHref } from "@/lib/recut";
+import { ExportDialog } from "@/components/adcheck/export-dialog";
 import { cn } from "@/lib/utils";
 
 /**
  * R5: the suggested re-cut beside the draft. Same footage, reordered, trimmed and captioned; every
  * change has its reason and evidence and can be switched off, and the preview follows at once.
  */
-export function RecutView({ orgId, base, trail = [], ad, brand, rivals }: { orgId: string; base: string; trail?: Crumb[]; ad: AdDetail; brand: string; rivals: string[] }) {
+export function RecutView({ orgId, base, trail = [], ad, brand, rivals, canEdit = true }: { orgId: string; base: string; trail?: Crumb[]; ad: AdDetail; brand: string; rivals: string[]; canEdit?: boolean }) {
+  const [exporting, setExporting] = useState(false);
   const recuts = ad.check?.recuts ?? [];
   const [kind, setKind] = useState<RecutKind>(recuts[0]?.kind ?? "RECOMMENDED");
   const recut = recuts.find((r) => r.kind === kind) ?? recuts[0]!;
@@ -45,11 +46,13 @@ export function RecutView({ orgId, base, trail = [], ad, brand, rivals }: { orgI
         crumbs={[...trail, { label: "Ad check", href: `${base}/ad-check` }, { label: ad.fileName ?? ad.title, href: `${base}/ad-check/${ad.id}` }, { label: "Re-cut" }]}
         actions={
           <>
-            <Button variant="outline" size="pill" className="hidden sm:inline-flex" onClick={() => toast("Tweaking a re-cut is coming next.", { description: "For now, switch changes on and off; the preview follows." })}>
-              <ScissorsIcon data-icon="inline-start" />
-              Tweak it
-            </Button>
-            <Button size="pill" onClick={() => toast("Exporting versions is coming next.", { description: "You’ll get each size your placements need, made on your computer." })}>
+            {canEdit && (
+              <Link href={tweakHref(base, ad.id, recut.id, changes.filter((c) => !c.on).map((c) => c.id)) as never} className={cn(buttonVariants({ variant: "outline", size: "pill" }), "hidden sm:inline-flex")}>
+                <ScissorsIcon data-icon="inline-start" />
+                Tweak it
+              </Link>
+            )}
+            <Button size="pill" disabled={!src} onClick={() => setExporting(true)}>
               <DownloadIcon data-icon="inline-start" />
               Export versions
             </Button>
@@ -184,6 +187,17 @@ export function RecutView({ orgId, base, trail = [], ad, brand, rivals }: { orgI
           </div>
         </div>
       </PageBody>
+      {src && (
+        <ExportDialog
+          open={exporting}
+          onOpenChange={setExporting}
+          src={src}
+          cut={cutOf(edit.clips, edit.overlays, {}, ad.placements.map((p) => FORMAT_FOR[p]).find(Boolean) ?? "16:9")}
+          brand={brand}
+          title={`${ad.title} · ${recut.editList.title}`}
+          placements={ad.placements}
+        />
+      )}
     </>
   );
 }

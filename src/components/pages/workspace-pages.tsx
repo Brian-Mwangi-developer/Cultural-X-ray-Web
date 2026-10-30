@@ -1,6 +1,8 @@
 import { AdCheckHome } from "@/components/adcheck/home";
 import { AdPage } from "@/components/adcheck/ad-page";
 import { RecutView } from "@/components/adcheck/recut-view";
+import { TweakView } from "@/components/adcheck/tweak-view";
+import { CheckView } from "@/components/adcheck/check-view";
 import { AudienceView } from "@/components/views/audience";
 import { CultureMapView } from "@/components/views/culture-map";
 import { MapBuilding } from "@/components/views/map-building";
@@ -15,6 +17,7 @@ import type { WorkspaceView } from "@/lib/page-context";
 import type { Creator, Play, PlaysList as PlaysData } from "@/lib/plays";
 import type { TerritoryView } from "@/lib/territory";
 import type { Basis } from "@/lib/basis";
+import { applyChanges, type Cut, cutOf, type Format, FORMAT_FOR, type SavedVersion } from "@/lib/recut";
 import { backendGet } from "@/lib/session";
 import { notFound, redirect } from "next/navigation";
 
@@ -116,5 +119,43 @@ export async function RecutPage({ view, adId }: { view: WorkspaceView; adId: str
   const { ad } = (await backendGet<{ ad: AdDetail }>(api(view, `/ads/${encodeURIComponent(adId)}`)))!;
   if (ad.status !== "READY") notFound();
   if (!ad.check?.recuts.length) redirect(`${view.base}/ad-check/${ad.id}`);
-  return <RecutView key={ad.id} orgId={view.orgId} base={view.base} trail={view.crumbs()} ad={ad} brand={view.brand} rivals={view.rivals} />;
+  return <RecutView key={ad.id} orgId={view.orgId} base={view.base} trail={view.crumbs()} ad={ad} brand={view.brand} rivals={view.rivals} canEdit={view.canWork} />;
+}
+
+/** R6: tweak a suggested re-cut (with the changes switched off in R5) or a saved version. */
+export async function TweakPage({ view, adId, from, off }: { view: WorkspaceView; adId: string; from: string | null; off: string[] }) {
+  const { ad } = (await backendGet<{ ad: AdDetail }>(api(view, `/ads/${encodeURIComponent(adId)}`)))!;
+  if (ad.status !== "READY" || !ad.check) notFound();
+  if (!view.canWork) redirect(`${view.base}/ad-check/${ad.id}/recut`);
+  const { versions } = (await backendGet<{ versions: SavedVersion[] }>(api(view, `/ads/${encodeURIComponent(adId)}/versions`)))!;
+  const suggested = ad.check.recuts.find((r) => r.id === from) ?? (from ? null : ad.check.recuts[0]);
+  const saved = versions.find((v) => v.id === from);
+  // The shape to start in: what the ad will mostly run as, else the draft's own.
+  const shape = (ad.placements.map((p) => FORMAT_FOR[p]).find(Boolean) ?? (ad.width && ad.height && ad.width < ad.height ? "9:16" : "16:9")) as Format;
+  let start: Cut;
+  let title: string;
+  if (saved) {
+    start = cutOf(saved.editList.clips, saved.editList.overlays, saved.editList, shape);
+    title = saved.editList.title;
+  } else if (suggested) {
+    const changes = suggested.editList.changes.map((c) => ({ ...c, on: c.on && !off.includes(c.id) }));
+    const edit = applyChanges(ad.shots, changes, view.brand);
+    start = cutOf(edit.clips, edit.overlays, {}, shape);
+    title = `${suggested.editList.title}, tweaked`;
+  } else {
+    start = { format: shape, sound: "original", endCard: null, clips: ad.shots.map((s) => ({ shot: s.index, inMs: s.startMs, outMs: s.endMs })) };
+    title = "Your version";
+  }
+  return <TweakView key={`${ad.id}-${from ?? ""}`} orgId={view.orgId} base={view.base} trail={view.crumbs()} ad={ad} brand={view.brand} start={start} from={saved?.id ?? suggested?.id ?? null} title={title} />;
+}
+
+/** R7: a saved version, checked again. */
+export async function VersionPage({ view, adId, versionId }: { view: WorkspaceView; adId: string; versionId: string }) {
+  const [{ ad }, { versions }] = await Promise.all([
+    backendGet<{ ad: AdDetail }>(api(view, `/ads/${encodeURIComponent(adId)}`)).then((r) => r!),
+    backendGet<{ versions: SavedVersion[] }>(api(view, `/ads/${encodeURIComponent(adId)}/versions`)).then((r) => r!),
+  ]);
+  const version = versions.find((v) => v.id === versionId);
+  if (!version || !ad.check) notFound();
+  return <CheckView key={version.id} orgId={view.orgId} base={view.base} trail={view.crumbs()} ad={ad} brand={view.brand} version={version} />;
 }

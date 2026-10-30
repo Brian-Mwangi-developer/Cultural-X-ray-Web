@@ -1,3 +1,4 @@
+import { api } from "@/lib/api";
 import type { Verdict } from "@/lib/ads";
 import { possessive } from "@/lib/intent";
 
@@ -7,7 +8,7 @@ import { possessive } from "@/lib/intent";
  * Keep the two in step: the backend's tests describe the behaviour.
  */
 
-export type RecutKind = "RECOMMENDED" | "SHORTEST" | "BOLDEST";
+export type RecutKind = "RECOMMENDED" | "SHORTEST" | "BOLDEST" | "CUSTOM";
 type Label = "YOURS" | "CONTESTED" | "THEIRS" | null;
 export type Proof = { cue: string; tag: { name: string; type: string } | null; territory: Label; rival: string | null; shot: number };
 export type EditChange = {
@@ -25,14 +26,38 @@ export type EditChange = {
   evidence: string;
   proof: Proof | null;
 };
-export type Clip = { shot: number; inMs: number; outMs: number; moved: boolean };
-export type Overlay = { kind: "caption"; text: string; atMs: number; untilMs: number } | { kind: "endCard"; brand: string; line: string; atMs: number; untilMs: number };
-export type EditList = { version: 1; kind: RecutKind; title: string; summary: string; newFootage: string; changes: EditChange[]; clips: Clip[]; overlays: Overlay[]; durationMs: number };
+export type Position = "top" | "middle" | "bottom";
+export type Format = "9:16" | "16:9" | "1:1";
+export type Sound = "original" | "mute";
+export type Clip = { shot: number; inMs: number; outMs: number; moved: boolean; cropX?: number; cropY?: number; caption?: { text: string; position: Position } };
+export type Overlay = { kind: "caption"; text: string; atMs: number; untilMs: number; position?: Position } | { kind: "endCard"; brand: string; line: string; atMs: number; untilMs: number };
+export type EditList = {
+  version: 1;
+  kind: RecutKind;
+  title: string;
+  summary: string;
+  newFootage: string;
+  changes: EditChange[];
+  clips: Clip[];
+  overlays: Overlay[];
+  durationMs: number;
+  format?: Format;
+  sound?: Sound;
+  endCard?: string | null;
+};
 export type Recut = { id: string; kind: RecutKind; editList: EditList; verdict: Verdict; createdAt: string };
+export type SavedVersion = Recut & { parentId: string | null; createdBy?: { name: string } | null };
 
 export const recutHref = (base: string, adId: string) => `${base}/ad-check/${adId}/recut`;
+export const tweakHref = (base: string, adId: string, from: string, off: string[] = []) => `${recutHref(base, adId)}/tweak?from=${from}${off.length ? `&off=${off.join(",")}` : ""}`;
+export const versionHref = (base: string, adId: string, versionId: string) => `${recutHref(base, adId)}/${versionId}`;
 
-export const KIND_LABEL: Record<RecutKind, string> = { RECOMMENDED: "Recommended", SHORTEST: "Shortest · 15 s", BOLDEST: "Boldest" };
+export const versionsApi = {
+  list: (orgId: string, adId: string) => api<{ versions: SavedVersion[] }>(`/orgs/${orgId}/ads/${adId}/versions`),
+  save: (orgId: string, adId: string, body: Cut & { title: string; from: string | null }) => api<{ version: SavedVersion }>(`/orgs/${orgId}/ads/${adId}/versions`, { body }),
+};
+
+export const KIND_LABEL: Record<RecutKind, string> = { RECOMMENDED: "Recommended", SHORTEST: "Shortest · 15 s", BOLDEST: "Boldest", CUSTOM: "Your version" };
 
 const MIN_CLIP_MS = 600;
 const CAPTION_MS = 3_500;
@@ -124,3 +149,86 @@ function tagKind(type: string) {
   const t = type.split(":")[0] ?? "";
   return { lifestyle: "lifestyle", hobby: "hobby", keyword: "theme", genre: "genre", adjective: "mood", subgenre: "genre" }[t] ?? "tag";
 }
+
+/* ------------------------------------------------- a version to tweak and export (R6–R8) */
+
+/**
+ * One cut as the editor, the players and the export all read it: clips of the draft in order, each
+ * with its own caption and crop, an end card line, the shape and the sound. The backend checks the
+ * same shape (backend recut.ts `tweakSchema`, `editFromTweak`); keep them in step.
+ */
+export type Cut = {
+  format: Format;
+  sound: Sound;
+  endCard: string | null;
+  clips: { shot: number; inMs: number; outMs: number; cropX?: number; cropY?: number; caption?: { text: string; position: Position } }[];
+};
+
+const firstWord = (s: string) => s.trim();
+
+/** Any edit list (a suggestion with its switches applied, or a saved version) as a cut. */
+export function cutOf(clips: Clip[], overlays: Overlay[], edit: Partial<Pick<EditList, "format" | "sound" | "endCard">>, fallbackFormat: Format): Cut {
+  // Suggested re-cuts carry captions as overlays on the cut's timeline; give each to the clip it starts on.
+  let t = 0;
+  const starts = clips.map((c) => {
+    const s0 = t;
+    t += c.outMs - c.inMs;
+    return s0;
+  });
+  return {
+    format: edit.format ?? fallbackFormat,
+    sound: edit.sound ?? "original",
+    endCard: edit.endCard ?? overlays.find((o): o is Extract<Overlay, { kind: "endCard" }> => o.kind === "endCard")?.line ?? null,
+    clips: clips.map((c, i) => {
+      const caption = c.caption ?? overlays.filter((o) => o.kind === "caption").map((o) => (o.atMs >= starts[i]! && o.atMs < starts[i]! + (c.outMs - c.inMs) ? { text: firstWord(o.text), position: (o as { position?: Position }).position ?? "bottom" } : null)).find(Boolean) ?? undefined;
+      return { shot: c.shot, inMs: c.inMs, outMs: c.outMs, ...(c.cropX !== undefined ? { cropX: c.cropX } : {}), ...(c.cropY !== undefined ? { cropY: c.cropY } : {}), ...(caption ? { caption } : {}) };
+    }),
+  };
+}
+
+/** A cut's clips and overlays for the players and the export: captions last their clip, the end card the last 3 s. */
+export function playable(cut: Cut, brand: string): { clips: Clip[]; overlays: Overlay[]; durationMs: number } {
+  let last = -1;
+  let t = 0;
+  const clips: Clip[] = [];
+  const overlays: Overlay[] = [];
+  for (const c of cut.clips) {
+    const len = c.outMs - c.inMs;
+    clips.push({ ...c, moved: c.shot < last });
+    last = Math.max(last, c.shot);
+    if (c.caption?.text.trim()) overlays.push({ kind: "caption", text: c.caption.text.trim(), atMs: t, untilMs: t + len, position: c.caption.position });
+    t += len;
+  }
+  if (cut.endCard?.trim()) overlays.push({ kind: "endCard", brand, line: cut.endCard.trim(), atMs: Math.max(0, t - 3_000), untilMs: t });
+  return { clips, overlays, durationMs: t };
+}
+
+/**
+ * A shorter version of a cut for feeds (15 s) or a bumper (6 s): clips keep their order and share the
+ * time by length; clips that would fall under MIN_CLIP_MS are dropped from the middle first, so the
+ * opening and the ending (with the end card) stay. Null when the cut is already that short.
+ */
+export function cutDown(cut: Cut, targetMs: number): Cut | null {
+  const total = cut.clips.reduce((n, c) => n + (c.outMs - c.inMs), 0);
+  if (total <= targetMs + 250) return null;
+  let kept = cut.clips.map((c, i) => ({ c, i }));
+  const fits = () => {
+    const sum = kept.reduce((n, k) => n + (k.c.outMs - k.c.inMs), 0);
+    return kept.every((k) => ((k.c.outMs - k.c.inMs) * targetMs) / sum >= MIN_CLIP_MS);
+  };
+  while (kept.length > 1 && !fits()) {
+    // Drop the shortest clip that isn't the first or the last.
+    const middle = kept.slice(1, -1);
+    const pool = middle.length ? middle : kept.slice(0, -1);
+    const shortest = pool.reduce((a, b) => (a.c.outMs - a.c.inMs <= b.c.outMs - b.c.inMs ? a : b));
+    kept = kept.filter((k) => k !== shortest);
+  }
+  const sum = kept.reduce((n, k) => n + (k.c.outMs - k.c.inMs), 0);
+  const share = Math.min(1, targetMs / sum);
+  return { ...cut, clips: kept.map(({ c }) => ({ ...c, outMs: c.inMs + Math.max(MIN_CLIP_MS, Math.floor((c.outMs - c.inMs) * share)) })) };
+}
+
+/** The shape each place an ad runs wants. */
+export const FORMAT_FOR: Record<string, Format> = { tiktok: "9:16", reels: "9:16", shorts: "9:16", stories: "9:16", feed: "1:1", youtube: "16:9", tv: "16:9" };
+export const FORMAT_WORDS: Record<Format, string> = { "9:16": "9:16 · Reels, TikTok", "16:9": "16:9 · YouTube", "1:1": "1:1 · Feed" };
+export const MIN_CLIP = MIN_CLIP_MS;

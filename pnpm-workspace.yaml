@@ -3,3 +3,5 @@ allowBuilds:
   prisma: true
   sharp: false
   unrs-resolver: false
+minimumReleaseAgeExclude:
+  - mediabunny@1.64.0
