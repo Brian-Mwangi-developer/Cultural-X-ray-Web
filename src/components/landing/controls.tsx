@@ -102,10 +102,16 @@ export function MobileMenu({ links }: { links: { href: string; label: string }[]
  * The launch film's player. Until the film is recorded (`src` is null) it says so instead of
  * pretending to play; once it's in /public/landing, set `src` and the same frame plays it inline.
  */
-export function FilmPlayer({ src, poster, length, children }: { src: string | null; poster: string; length: string; children: React.ReactNode }) {
+export function FilmPlayer({ src, poster, captions, length, children }: { src: string | null; poster: string; captions?: string; length: string; children: React.ReactNode }) {
   const [playing, setPlaying] = useState(false);
   if (playing && src) {
-    return <video src={src} poster={poster} controls autoPlay playsInline className="aspect-video w-full rounded-[28px] bg-black object-cover" />;
+    // The film has captions burned in, so the captions file is there to switch on, not on by default.
+    // crossOrigin lets it load from the same storage as the film.
+    return (
+      <video src={src} poster={poster} controls autoPlay playsInline crossOrigin="anonymous" preload="auto" className="aspect-video w-full rounded-[20px] bg-black object-cover sm:rounded-[28px]">
+        {captions && <track kind="captions" src={captions} srcLang="en" label="English" />}
+      </video>
+    );
   }
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-[20px] sm:rounded-[28px]">

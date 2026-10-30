@@ -13,7 +13,15 @@ import { cn } from "@/lib/utils";
  */
 
 /** The launch film of the software. Set `src` once it's recorded into /public/landing. */
-const FILM = { src: null as string | null, poster: "/landing/f-owner.webp", length: "1:40" };
+/** The launch film, streamed from Vercel Blob (source project: qloo/film). The cover is a local copy of its poster. */
+const FILM_BLOB = "https://aljgcmbgqqymfiyc.public.blob.vercel-storage.com/landing/launch-film";
+const FILM = {
+  src: `${FILM_BLOB}/cultural-xray-launch-film.mp4` as string | null,
+  poster: `${FILM_BLOB}/cultural-xray-launch-film-poster.jpg`,
+  captions: `${FILM_BLOB}/cultural-xray-launch-film.vtt`,
+  cover: "/landing/film-poster.webp",
+  length: "3:43",
+};
 
 const LINKS = [
   { href: "#ad-check", label: "Ad check" },
@@ -170,7 +178,7 @@ function Hero() {
       </div>
 
       <a href="#film" className="group absolute right-8 bottom-24 z-10 hidden h-[156px] w-[260px] overflow-hidden rounded-[14px] ring-1 ring-white/35 lg:right-[120px] lg:block">
-        <Image src="/landing/f-tablet.webp" alt="" fill sizes="260px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+        <Image src={FILM.src ? FILM.cover : "/landing/f-tablet.webp"} alt="" fill sizes="260px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
         <span className="absolute inset-0 bg-black/35" />
         <span className="absolute bottom-3.5 left-3.5 flex items-center gap-2 text-[13.5px] font-medium">
           <span className="flex size-[22px] items-center justify-center rounded-full bg-ember">
@@ -352,36 +360,11 @@ function Film() {
   return (
     <section id="film" className="scroll-mt-6 pb-24 sm:pb-[140px]">
       <div className={wrap}>
-        <Statement first="See it work." rest="Two minutes, one bakery, one ad, one brief." className="text-center text-[30px] sm:text-[44px]" />
+        <Statement first="See it work." rest="Under four minutes: one bakery, one ad, one brief." className="text-center text-[30px] sm:text-[44px]" />
         <div className="mt-10">
-          <FilmPlayer src={FILM.src} poster={FILM.poster} length={FILM.length}>
-            <Image src={FILM.poster} alt="" fill sizes="(max-width: 1200px) 100vw, 1200px" className="object-cover" />
-            <div className="absolute inset-0 bg-black/45" />
-            {/* The product, framed, until the film plays. */}
-            <div className="absolute top-[12%] left-1/2 hidden w-[53%] -translate-x-1/2 overflow-hidden rounded-2xl bg-white text-[#111113] shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] md:block">
-              <div className="flex gap-1.5 bg-[#f5f4f2] px-3.5 py-3">
-                {[0, 1, 2].map((d) => (
-                  <span key={d} className="size-2.5 rounded-full bg-[#d4d4d8]" />
-                ))}
-              </div>
-              <div className="flex gap-6 p-6">
-                <div className="relative aspect-[9/16] w-[27%] shrink-0 overflow-hidden rounded-xl">
-                  <Image src="/landing/ad-bakery.webp" alt="" fill sizes="170px" className="object-cover" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[clamp(16px,1.7vw,22px)] leading-[1.22] font-semibold tracking-[-0.02em]">Speaks to your regulars. One shot could be anyone&rsquo;s.</p>
-                  <ul className="mt-4 space-y-2 text-[13.5px]">
-                    {[["fix", "Made wide. The feed wants square."], ["fix", "No next step at the end."], ["ok", "The bread shows in the first two seconds."]].map(([k, s]) => (
-                      <li key={s} className="flex items-center gap-2.5 rounded-[10px] bg-[#f5f4f2] px-3 py-2.5">
-                        <Glyph kind={k as Kind} />
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                  <span className="mt-4 inline-block rounded-full bg-ember px-4 py-2 text-[13px] font-medium text-white">See 3 re-cuts</span>
-                </div>
-              </div>
-            </div>
+          <FilmPlayer src={FILM.src} poster={FILM.poster} captions={FILM.captions} length={FILM.length}>
+            <Image src={FILM.cover} alt="" fill sizes="(max-width: 1200px) 100vw, 1200px" className="object-cover" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
           </FilmPlayer>
         </div>
       </div>
