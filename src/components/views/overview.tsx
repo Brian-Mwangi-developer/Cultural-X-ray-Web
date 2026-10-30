@@ -15,6 +15,7 @@ import { PHOTOS } from "@/lib/sample-data";
 import { basisFrom, inWords } from "@/lib/basis";
 import { StandInNote } from "@/components/app/stand-in-note";
 import { ReportActions } from "@/components/report/report-actions";
+import { RebuildBanner } from "@/components/views/rebuild-banner";
 import { cn } from "@/lib/utils";
 
 type Column = { title: string; kinds: MapKind[]; fallback: StaticImageData };
@@ -148,6 +149,7 @@ export function OverviewView({
       />
       <PageBody className="space-y-10">
         <div className="space-y-5">
+          <RebuildBanner key={map.rebuild?.id} orgId={orgId} initial={map.rebuild} canBuild={canBuild} />
           {/* The title is the brand; X-Ray's read of it is feedback, in its own card. */}
           <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
             <div className="min-w-0">

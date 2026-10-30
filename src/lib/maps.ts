@@ -18,6 +18,9 @@ export type MapCategory = {
   items: MapItem[];
 };
 
+/** A rebuild under way (or stopped) while the last ready map stays on show. */
+export type Rebuild = { id: string; status: MapStatus; categoriesDone: number; categoriesTotal: number };
+
 export type CultureMap = {
   id: string;
   status: MapStatus;
@@ -31,6 +34,7 @@ export type CultureMap = {
   associations: number;
   subjects: { id: string; role: "SELF" | "SEED" | "RIVAL"; entityId: string; name: string; image: string | null }[];
   categories: MapCategory[];
+  rebuild?: Rebuild;
 };
 
 export const territoryOf = (label: MapLabel) => label.toLowerCase() as "yours" | "contested" | "theirs";

@@ -69,9 +69,12 @@ export async function AudiencePage({ view }: { view: WorkspaceView }) {
 
 /** The latest ready map, podcasts first; filters and other categories load in the page. */
 export async function MapPage({ view }: { view: WorkspaceView }) {
-  const data = (await backendGet<TerritoryView>(api(view, "/maps/latest/territory?category=PODCAST")))!;
+  const [data, latest] = await Promise.all([
+    backendGet<TerritoryView>(api(view, "/maps/latest/territory?category=PODCAST")).then((r) => r!),
+    backendGet<{ map: CultureMap | null }>(api(view, "/maps/latest")),
+  ]);
   if (!data.map || !data.view) return <NoMapYet orgId={view.orgId} brand={view.brand} canBuild={view.canWork} crumb="Culture Map" />;
-  return <CultureMapView orgId={view.orgId} base={view.base} crumbs={view.crumbs({ label: "Culture Map" })} brand={view.brand} viaAgency={view.viaAgency} canWork={view.canWork} initial={{ map: data.map, view: data.view }} />;
+  return <CultureMapView key={data.map.id} orgId={view.orgId} base={view.base} crumbs={view.crumbs({ label: "Culture Map" })} brand={view.brand} viaAgency={view.viaAgency} canWork={view.canWork} initial={{ map: data.map, view: data.view }} rebuilding={latest?.map?.rebuild} />;
 }
 
 export async function PlaysPage({ view }: { view: WorkspaceView }) {

@@ -16,7 +16,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AppError } from "@/lib/errors";
 import { possessive } from "@/lib/intent";
-import { maps } from "@/lib/maps";
+import { maps, type Rebuild } from "@/lib/maps";
+import { RebuildBanner } from "@/components/views/rebuild-banner";
 import { type Basis, inWords, lookalike, type Words, wordsFor } from "@/lib/basis";
 import { StandInNote } from "@/components/app/stand-in-note";
 import { type AgeKey, AGES, builtWords, type Kind, kindOf, KINDS, leanWords, ordinal, territory, type TerritoryItem, type TerritoryView, type Tier, TIERS, whyHere } from "@/lib/territory";
@@ -34,7 +35,7 @@ const TERRITORY: Record<TerritoryItem["label"], Territory> = { YOURS: "yours", C
  * Filters (age, mainstream or niche) are real Qloo views, built the first time they're asked for and
  * kept. Every place on the map is explained in words; Qloo's raw scores stay out of sight.
  */
-export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork, initial }: { orgId: string; base: string; crumbs: Crumb[]; brand: string; viaAgency: boolean; canWork: boolean; initial: { map: MapMeta; view: View } }) {
+export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork, initial, rebuilding }: { orgId: string; base: string; crumbs: Crumb[]; brand: string; viaAgency: boolean; canWork: boolean; initial: { map: MapMeta; view: View }; rebuilding?: Rebuild }) {
   const router = useRouter();
   const [kind, setKind] = useState<Kind>(initial.view.kind);
   const [segment, setSegment] = useState<AgeKey>(initial.view.segment);
@@ -101,7 +102,8 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
   async function rebuild() {
     try {
       await maps.build(orgId, true);
-      router.push(base as never);
+      // The banner shows its progress here, over the map from before.
+      router.refresh();
     } catch (error) {
       toast(error instanceof AppError ? error.message : "We couldn’t start the rebuild. Try again.");
     }
@@ -139,6 +141,7 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
         }
       />
       <PageBody className="space-y-6">
+        <RebuildBanner key={rebuilding?.id} orgId={orgId} initial={rebuilding} canBuild={canWork} />
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 flex-wrap items-center gap-3" data-guide="map.compare" data-guide-say={rivals.length ? `Compared with ${rivals.join(", ")}. Change them, or add brands to read through; saving rebuilds the map.` : undefined}>
             <h1 className="text-[32px] leading-none font-semibold tracking-[-0.03em] lg:text-[36px]">{brand}</h1>
