@@ -165,6 +165,26 @@
   to { transform: translateX(-50%); }
 }
 
+/* Landing (/): its own palette per theme. The film hero, the ticker and the closing look the same in both. */
+.landing {
+  --l-bg: #ffffff;
+  --l-fg: #111113;
+  --l-muted: #71717a;
+  --l-accent: #e8590c;
+  --l-border: #e4e4e7;
+  --l-warm: #fff1e7;
+  --l-glow: rgb(255 103 25 / 0.22);
+}
+.dark .landing {
+  --l-bg: #0c0c0e;
+  --l-fg: #ffffff;
+  --l-muted: rgb(255 255 255 / 0.6);
+  --l-accent: #ff7a33;
+  --l-border: #2a2a2e;
+  --l-warm: #1b120c;
+  --l-glow: rgb(255 103 25 / 0.35);
+}
+
 @keyframes fill {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }

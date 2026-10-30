@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: "%s · Cultural X-Ray",
   },
   description:
-    "Map the culture your market lives in: the podcasts, creators, shows and places around your brand and your competitors.",
+    "Most ads fail before anyone sees them. Cultural X-Ray shows you what fills your customers' lives and makes sure your ad speaks to it before you pay to run it.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
