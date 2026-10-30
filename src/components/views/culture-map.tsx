@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { CircleCheckIcon, CircleHelpIcon, HistoryIcon, PlusIcon, SearchIcon, SparklesIcon } from "lucide-react";
 import { CompareDialog } from "@/components/compare/compare-dialog";
 import { Evidence, initialsOf, LeanBar, TerritoryGlyph, WideOnly, type Territory } from "@/components/app/parts";
-import { SoonButton } from "@/components/app/soon-button";
 import { XRayRead } from "@/components/app/xray-read";
 import { PageBody, TopBar, type Crumb } from "@/components/shell/top-bar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -23,6 +22,7 @@ import { StandInNote } from "@/components/app/stand-in-note";
 import { type AgeKey, AGES, builtWords, type Kind, kindOf, KINDS, leanWords, ordinal, territory, type TerritoryItem, type TerritoryView, type Tier, TIERS, whyHere } from "@/lib/territory";
 import { cn } from "@/lib/utils";
 import { guideDid } from "@/lib/guide";
+import { WriteBriefDialog } from "@/components/briefs/write-brief-dialog";
 
 type View = NonNullable<TerritoryView["view"]>;
 type MapMeta = NonNullable<TerritoryView["map"]>;
@@ -44,6 +44,7 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<TerritoryItem | null>(null);
   const [rebuildOpen, setRebuildOpen] = useState(false);
+  const [briefOpen, setBriefOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const asked = useRef(new Set<string>());
   const wasBuilding = useRef(false);
@@ -128,10 +129,12 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
                 Rebuild
               </Button>
             )}
-            <SoonButton size="pill" className="hidden sm:inline-flex" message="Briefs from the map are coming next.">
-              <SparklesIcon data-icon="inline-start" />
-              Write brief
-            </SoonButton>
+            {canWork && (
+              <Button size="pill" className="hidden sm:inline-flex" onClick={() => setBriefOpen(true)}>
+                <SparklesIcon data-icon="inline-start" />
+                Write brief
+              </Button>
+            )}
           </>
         }
       />
@@ -251,6 +254,7 @@ export function CultureMapView({ orgId, base, crumbs, brand, viaAgency, canWork,
       />
 
       <CompareDialog orgId={orgId} base={base} open={compareOpen} onOpenChange={setCompareOpen} />
+      <WriteBriefDialog orgId={orgId} base={base} brand={brand} open={briefOpen} onOpenChange={setBriefOpen} />
 
       <AlertDialog open={rebuildOpen} onOpenChange={setRebuildOpen}>
         <AlertDialogContent>

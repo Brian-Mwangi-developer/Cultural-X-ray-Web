@@ -2,6 +2,7 @@ import {
   BadgeDollarSignIcon,
   BuildingIcon,
   CircleAlertIcon,
+  FileTextIcon,
   HouseIcon,
   InboxIcon,
   LinkIcon,
@@ -27,6 +28,7 @@ const workspaceNav = (base: string): NavItem[] => [
   { label: "Culture Map", href: `${base}/map`, icon: MapIcon },
   { label: "Audience & places", href: `${base}/audience`, icon: UsersIcon },
   { label: "Plays", href: `${base}/plays`, icon: SparklesIcon },
+  { label: "Briefs", href: `${base}/briefs`, icon: FileTextIcon },
   { label: "Ad check", href: `${base}/ad-check`, icon: ScanSearchIcon },
 ];
 

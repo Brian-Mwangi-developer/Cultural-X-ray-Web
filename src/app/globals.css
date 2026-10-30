@@ -225,3 +225,81 @@
 :root[data-evidence="hidden"] [data-evidence] {
   display: none;
 }
+
+/*
+ * Paper: reports, briefs and their PDFs always read as a white page with our ink, whatever the app's
+ * theme (the light tokens again, scoped). Print: A4, page numbers bottom right, app chrome hidden.
+ */
+.paper {
+  --background: #ffffff;
+  --foreground: #111113;
+  --card: #ffffff;
+  --card-foreground: #111113;
+  --popover: #ffffff;
+  --popover-foreground: #111113;
+  --primary: #ff6719;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f6f6f7;
+  --muted-foreground: #71717a;
+  --faint: #a1a1aa;
+  --soft: #f1f1f3;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #dc2626;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #ff6719;
+  --ember: #ff6719;
+  --ember-foreground: #ffffff;
+  --ember-soft: #fff0e8;
+  --ember-ink: #c2410c;
+  --chart-1: #ff6719;
+  --chart-2: #3f3f46;
+  --chart-3: #71717a;
+  --chart-4: #a1a1aa;
+  --chart-5: #e4e4e7;
+  --radius: 0.75rem;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #111113;
+  --sidebar-primary: #ff6719;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #111113;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #ff6719;
+  color-scheme: light;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@page {
+  size: A4;
+  margin: 14mm 14mm 16mm;
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-size: 8.5pt;
+    color: #71717a;
+  }
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+  }
+  .no-print,
+  [data-guide-bar],
+  [data-sonner-toaster],
+  nextjs-portal {
+    display: none !important;
+  }
+  .page-break {
+    break-before: page;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

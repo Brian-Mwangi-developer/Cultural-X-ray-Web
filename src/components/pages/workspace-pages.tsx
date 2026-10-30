@@ -3,6 +3,8 @@ import { AdPage } from "@/components/adcheck/ad-page";
 import { RecutView } from "@/components/adcheck/recut-view";
 import { TweakView } from "@/components/adcheck/tweak-view";
 import { CheckView } from "@/components/adcheck/check-view";
+import { BriefsList, BriefView } from "@/components/briefs/brief-view";
+import type { Brief, BriefSummary } from "@/lib/briefs";
 import { AudienceView } from "@/components/views/audience";
 import { CultureMapView } from "@/components/views/culture-map";
 import { MapBuilding } from "@/components/views/map-building";
@@ -158,4 +160,17 @@ export async function VersionPage({ view, adId, versionId }: { view: WorkspaceVi
   const version = versions.find((v) => v.id === versionId);
   if (!version || !ad.check) notFound();
   return <CheckView key={version.id} orgId={view.orgId} base={view.base} trail={view.crumbs()} ad={ad} brand={view.brand} version={version} />;
+}
+
+export async function BriefsPage({ view }: { view: WorkspaceView }) {
+  const [{ briefs }, { map }] = await Promise.all([
+    backendGet<{ briefs: BriefSummary[] }>(api(view, "/briefs")).then((r) => r!),
+    backendGet<{ map: CultureMap | null }>(api(view, "/maps/latest")).then((r) => r!),
+  ]);
+  return <BriefsList orgId={view.orgId} base={view.base} trail={view.crumbs()} brand={view.brand} briefs={briefs} canEdit={view.canWork} hasMap={map?.status === "READY"} />;
+}
+
+export async function BriefPage({ view, briefId }: { view: WorkspaceView; briefId: string }) {
+  const { brief } = (await backendGet<{ brief: Brief }>(api(view, `/briefs/${encodeURIComponent(briefId)}`)))!;
+  return <BriefView key={brief.id} orgId={view.orgId} slug={view.base.split("/")[1]!} base={view.base} trail={view.crumbs()} initial={brief} canEdit={view.canWork} />;
 }
