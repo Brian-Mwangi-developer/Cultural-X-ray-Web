@@ -1,8 +1,7 @@
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, CircleCheckIcon, DownloadIcon, FlagIcon, type LucideIcon, MicIcon, Share2Icon, UploadIcon, UserIcon } from "lucide-react";
+import { ArrowRightIcon, CircleCheckIcon, FlagIcon, type LucideIcon, MicIcon, UploadIcon, UserIcon } from "lucide-react";
 import { Evidence, TerritoryGlyph, TextLink } from "@/components/app/parts";
-import { SoonButton } from "@/components/app/soon-button";
 import { RestsOn, XRayRead } from "@/components/app/xray-read";
 import { AskAbout } from "@/components/ask/ask-about";
 import { AudienceGlobe } from "@/components/globe/audience-globe";
@@ -15,6 +14,7 @@ import { type CultureMap, categoryOf, type MapItem, type MapKind, ownedIn, short
 import { PHOTOS } from "@/lib/sample-data";
 import { basisFrom, inWords } from "@/lib/basis";
 import { StandInNote } from "@/components/app/stand-in-note";
+import { ReportActions } from "@/components/report/report-actions";
 import { cn } from "@/lib/utils";
 
 type Column = { title: string; kinds: MapKind[]; fallback: StaticImageData };
@@ -142,14 +142,7 @@ export function OverviewView({
         crumbs={crumbs}
         actions={
           <>
-            <SoonButton variant="outline" size="pill" message="Sharing arrives with briefs.">
-              <Share2Icon data-icon="inline-start" />
-              Share
-            </SoonButton>
-            <SoonButton variant="outline" size="pill" className="hidden md:inline-flex" message="PDF export arrives with briefs.">
-              <DownloadIcon data-icon="inline-start" />
-              Export PDF
-            </SoonButton>
+            {map && <ReportActions orgId={orgId} slug={base.split("/")[1]!} brand={brand} canShare={canBuild} />}
           </>
         }
       />
