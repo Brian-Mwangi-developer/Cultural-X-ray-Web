@@ -11,6 +11,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { unwrap } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { attempt } from "@/lib/feedback";
+import { ImageField } from "@/components/settings/image-field";
+import { media } from "@/lib/media";
 import { SettingsSection } from "./parts";
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric" });
@@ -34,13 +36,13 @@ export function ProfileForm({ user }: { user: { name: string; email: string; ima
 
   return (
     <form onSubmit={save} className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Avatar name={name || user.name} image={user.image} className="size-16! text-[20px]!" />
-        <div className="text-[13.5px]">
-          <p className="font-medium">Photo</p>
-          <p className="mt-0.5 text-muted-foreground">{user.image ? "From your Google account." : "Your initials for now. Photo upload is coming soon."}</p>
-        </div>
-      </div>
+      <ImageField
+        label="Photo"
+        help={user.image ? "Shown to your team and on what you write." : "A PNG, JPEG or WebP, up to 2 MB. Until then, your initials."}
+        preview={<Avatar name={name || user.name} image={user.image} className="size-16! text-[20px]!" />}
+        has={Boolean(user.image)}
+        onSave={(file) => media.setPhoto(file)}
+      />
       <div className="grid gap-5 md:grid-cols-2">
         <FormField label="Full name" htmlFor="name" error={error}>
           <TextInput id="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />

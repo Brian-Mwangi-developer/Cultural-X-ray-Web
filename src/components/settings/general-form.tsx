@@ -13,6 +13,8 @@ import { AppError, userMessage } from "@/lib/errors";
 import { readIntent } from "@/lib/intent";
 import { reportError } from "@/lib/report";
 import type { OrgContext } from "@/lib/session";
+import { ImageField } from "@/components/settings/image-field";
+import { media } from "@/lib/media";
 import { ReadOnlyNote } from "./parts";
 
 type TeamSize = "1-10" | "11-50" | "51-200" | "201+";
@@ -76,13 +78,14 @@ export function GeneralForm({ org, canEdit }: { org: OrgContext; canEdit: boolea
     <form onSubmit={save} className="space-y-6">
       {!canEdit && <ReadOnlyNote>Only owners and admins can change these settings.</ReadOnlyNote>}
       <fieldset disabled={!canEdit || pending} className="space-y-6">
-        <div className="flex items-center gap-4">
-          <BrandMark name={v.name || "A"} tone={agency ? "ember" : "neutral"} size="xl" />
-          <div className="text-[13.5px]">
-            <p className="font-medium">{agency ? "Agency logo" : "Brand logo"}</p>
-            <p className="mt-0.5 text-muted-foreground">Your initial for now. Logo upload is coming soon.</p>
-          </div>
-        </div>
+        <ImageField
+          label={agency ? "Agency logo" : "Brand logo"}
+          help={o.logo ? "Shown in the sidebar, on briefs, share links and PDFs." : "A square PNG, JPEG or WebP, up to 2 MB. Until then, your initial."}
+          preview={<BrandMark name={v.name || "A"} logo={o.logo} tone={agency ? "ember" : "neutral"} size="xl" />}
+          has={Boolean(o.logo)}
+          disabled={!canEdit}
+          onSave={(file) => media.setLogo(o.id, file)}
+        />
 
         {error && <p role="alert" className="rounded-xl bg-destructive/[0.06] px-4 py-3 text-[14px] ring-1 ring-destructive/25 ring-inset">{error}</p>}
 
