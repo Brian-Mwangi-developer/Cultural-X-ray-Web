@@ -230,8 +230,8 @@ function TownField({ market, town, onTown }: { market: Market; town: Locality | 
       <TextInput id={id} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={market === "GB" ? "Brighton" : "Austin"} autoComplete="off" autoFocus />
       {trimmed.length >= 2 && (
         <ul className="mt-2 rounded-[12px] border bg-card p-1" aria-label="Towns">
-          {loading && !results.length && <li className="px-3 py-2 text-[13px] text-muted-foreground">Searching…</li>}
-          {!loading && !results.length && <li className="px-3 py-2 text-[13px] text-muted-foreground">Not found. Try a nearby town.</li>}
+          {(loading || settled !== trimmed) && !results.length && <li className="px-3 py-2 text-[13px] text-muted-foreground">Searching…</li>}
+          {!loading && settled === trimmed && !results.length && <li className="px-3 py-2 text-[13px] text-muted-foreground">Not found. Try a nearby town.</li>}
           {results.map((l) => (
             <li key={l.id}>
               <button type="button" onClick={() => onTown(l)} className="w-full rounded-[8px] px-3 py-2 text-left text-[13.5px] hover:bg-muted">
