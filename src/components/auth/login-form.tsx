@@ -12,6 +12,9 @@ import { fieldErrors, loginSchema, type FieldErrors } from "./schemas";
 
 type Values = { email: string; password: string };
 
+/** A ready-made bakery workspace (GAIL's Bakery Hove, map built) for hackathon judges to look around in. */
+const DEMO = { email: "exampleme999@gmail.com", password: "bakery-film-2026" };
+
 /** Messages for the reasons someone can land on /login. */
 function arrivalNotice(params: URLSearchParams): { message: string; tone: "error" | "info" } | null { // ui-ok: alert or field state, not a chip
   const error = params.get("error")?.toUpperCase();
@@ -137,12 +140,45 @@ export function LoginForm() {
         </form>
       </div>
 
-      <p className="text-center text-[14px] text-muted-foreground">
-        New to Cultural X-Ray?{" "}
-        <Link href="/signup" className="font-medium text-foreground underline decoration-foreground/30 underline-offset-4 transition-colors hover:decoration-foreground">
-          Create an account
-        </Link>
-      </p>
+      {!lockedEmail && (
+        <section aria-labelledby="demo-heading" className="rounded-[14px] border bg-muted/60 p-4 text-[13.5px]">
+          <h2 id="demo-heading" className="font-medium text-foreground">Judging Cultural X-Ray?</h2>
+          <p className="mt-1 text-muted-foreground">Look around a ready-made bakery workspace, its culture map already built.</p>
+          <dl className="mt-3 space-y-1">
+            {[["Email", DEMO.email], ["Password", DEMO.password]].map(([k, v]) => (
+              <div key={k} className="flex gap-3">
+                <dt className="w-[70px] shrink-0 text-muted-foreground">{k}</dt>
+                <dd className="font-medium text-foreground select-all">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <button
+            type="button"
+            onClick={() => {
+              setValues(DEMO);
+              setFormError(null);
+            }}
+            className="mt-3 rounded-full border bg-background px-3.5 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            Use the demo account
+          </button>
+          <p className="mt-4 border-t pt-3 text-muted-foreground">
+            You&rsquo;ll get the most out of it with your own account: sign up and X-Ray builds a culture map for your business, so every read, ad check and brief is about your customers.{" "}
+            <Link href="/signup" className="font-medium text-ember-ink underline decoration-ember-ink/30 underline-offset-4 transition-colors hover:decoration-ember-ink">
+              Create your own account
+            </Link>
+          </p>
+        </section>
+      )}
+
+      {lockedEmail && (
+        <p className="text-center text-[14px] text-muted-foreground">
+          New to Cultural X-Ray?{" "}
+          <Link href="/signup" className="font-medium text-foreground underline decoration-foreground/30 underline-offset-4 transition-colors hover:decoration-foreground">
+            Create an account
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
