@@ -23,7 +23,7 @@ type Role = "rivals" | "seeds";
  * from) and read-through brands (whose customers stand in for yours while Qloo doesn't know you, or
  * fill out thin data when it does). Search is Qloo's brand search; saving rebuilds the map.
  */
-export function CompareDialog({ orgId, base, open, onOpenChange }: { orgId: string; base: string; open: boolean; onOpenChange: (o: boolean) => void }) {
+export function CompareDialog({ orgId, base, open, onOpenChange, removing }: { orgId: string; base: string; open: boolean; onOpenChange: (o: boolean) => void; /** Opened from a row's Remove: that brand starts taken out, so saving is one click. */ removing?: string | null }) {
   const router = useRouter();
   const [set, setSet] = useState<CompareSet | null>(null);
   const [rivals, setRivals] = useState<ComparePick[]>([]);
@@ -42,14 +42,14 @@ export function CompareDialog({ orgId, base, open, onOpenChange }: { orgId: stri
       .then((s) => {
         if (!live) return;
         setSet(s);
-        setRivals(s.rivals);
-        setSeeds(s.seeds);
+        setRivals(s.rivals.filter((p) => p.name !== removing));
+        setSeeds(s.seeds.filter((p) => p.name !== removing));
       })
       .catch(() => toast("We couldn’t load who you compare with. Try again."));
     return () => {
       live = false;
     };
-  }, [open, orgId]);
+  }, [open, orgId, removing]);
 
   // Qloo's brand search, once typing pauses; a newer search cancels the last.
   const settled = useDebounced(query.trim());
@@ -108,7 +108,7 @@ export function CompareDialog({ orgId, base, open, onOpenChange }: { orgId: stri
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-[620px]">
         <DialogHeader>
           <DialogTitle>Who {brand} is compared with</DialogTitle>
-          <DialogDescription>Search Qloo for a brand, then add it as a rival or as a brand to read through.</DialogDescription>
+          <DialogDescription>{removing ? `${removing} is taken out below. Save to rebuild the map without it, or add it back by searching.` : "Search Qloo for a brand, then add it as a rival or as a brand to read through."}</DialogDescription>
         </DialogHeader>
 
         {!set ? (
@@ -121,7 +121,7 @@ export function CompareDialog({ orgId, base, open, onOpenChange }: { orgId: stri
             <div className={cn("overflow-hidden rounded-[12px] border", query && "border-ember/70")}>
               <label className="flex items-center gap-2.5 px-3">
                 <SearchIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search brands, e.g. Franco Manca" className="h-11 border-0 px-0 shadow-none focus-visible:ring-0" aria-label="Search brands" />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search brands, e.g. Franco Manca" className="h-11 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent" aria-label="Search brands" />
                 {searching && <Spinner className="size-4" />}
               </label>
               {query.trim().length >= 2 && results.length > 0 && (

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BookmarkIcon, ChevronRightIcon, PlusIcon, SettingsIcon } from "lucide-react";
+import { BookmarkIcon, ChevronRightIcon, MapIcon, MoreHorizontalIcon, PencilIcon, PlusIcon, SettingsIcon, XIcon } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { BrandMark } from "@/components/app/parts";
 import { AddClientDialog } from "@/components/clients/add-client-dialog";
 import { Kbd } from "@/components/ui/kbd";
@@ -16,6 +17,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
+  SidebarMenuAction,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -51,6 +53,11 @@ export function AppSidebar({ user, org, memberships, clients }: { user: ShellUse
   const intent = readIntent(o.metadata);
   const subtitle = agency ? undefined : [intent.city, marketLabel && `${marketLabel} market`].filter(Boolean).join(" · ") || undefined;
   const [compareOpen, setCompareOpen] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const openCompare = (remove: string | null = null) => {
+    setRemoving(remove);
+    setCompareOpen(true);
+  };
 
   return (
     <Sidebar className="border-r-0">
@@ -117,7 +124,7 @@ export function AppSidebar({ user, org, memberships, clients }: { user: ShellUse
                     render={
                       <button
                         type="button"
-                        onClick={() => setCompareOpen(true)}
+                        onClick={() => openCompare()}
                         aria-label="Add a rival or a brand to read through"
                         className="flex size-6 items-center justify-center rounded-[7px] text-muted-foreground transition-colors hover:bg-ember-soft hover:text-ember-ink"
                       />
@@ -138,13 +145,36 @@ export function AppSidebar({ user, org, memberships, clients }: { user: ShellUse
                     <SidebarMenuButton render={<Link href={`/${o.slug}/map`} />} className={itemClass}>
                       <BrandMark name={b} size="xs" tone="neutral" />
                       <span className="flex-1 truncate">{b}</span>
-                      <span className="text-[12px] text-muted-foreground">{role}</span>
+                      {/* The menu button takes the role's place on hover. */}
+                      <span className={cn("text-[12px] text-muted-foreground", canWork(org.membership.role) && "md:group-focus-within/menu-item:opacity-0 md:group-hover/menu-item:opacity-0 max-md:pr-6")}>{role}</span>
                     </SidebarMenuButton>
+                    {canWork(org.membership.role) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger render={<SidebarMenuAction showOnHover className="top-2 right-1.5 size-5 rounded-[6px] text-muted-foreground" aria-label={`More for ${b}`} />}>
+                          <MoreHorizontalIcon />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="right" align="start" className="w-auto min-w-[200px]">
+                          <DropdownMenuItem render={<Link href={`/${o.slug}/map`} />}>
+                            <MapIcon />
+                            Open on the map
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="whitespace-nowrap" onClick={() => openCompare()}>
+                            <PencilIcon />
+                            Change who you compare with
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem variant="destructive" onClick={() => openCompare(b)}>
+                            <XIcon />
+                            Remove {b}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
-            <CompareDialog orgId={o.id} base={`/${o.slug}`} open={compareOpen} onOpenChange={setCompareOpen} />
+            <CompareDialog orgId={o.id} base={`/${o.slug}`} open={compareOpen} onOpenChange={setCompareOpen} removing={removing} />
           </SidebarGroup>
         )}
       </SidebarContent>
